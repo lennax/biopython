@@ -8,10 +8,8 @@
 import os.path
 import warnings
 import Bio.PDB.mmCIF.MMCIFlex
-from UserDict import UserDict
 
-
-class MMCIF2Dict(UserDict):
+class MMCIF2Dict():
     # The token identifiers
     NAME=1
     LOOP=2
@@ -34,13 +32,23 @@ class MMCIF2Dict(UserDict):
 
     def _make_mmcif_dict(self): 
         # local copies
-        NAME=self.NAME
-        LOOP=self.LOOP
-        DATA=self.DATA
-        SEMICOLONS=self.SEMICOLONS
-        DOUBLEQUOTED=self.DOUBLEQUOTED
-        QUOTED=self.QUOTED
-        SIMPLE=self.SIMPLE
+        #NAME=self.NAME
+        #LOOP=self.LOOP
+        #DATA=self.DATA
+        #SEMICOLONS=self.SEMICOLONS
+        #DOUBLEQUOTED=self.DOUBLEQUOTED
+        #QUOTED=self.QUOTED
+        #SIMPLE=self.SIMPLE
+
+        # PLY requires tokenizer to return token names
+        NAME="NAME"
+        LOOP="LOOP"
+        DATA="DATA"
+        SEMICOLONS="SEMICOLON_VALUE"
+        DOUBLEQUOTED="DOUBLE_QUOTE_VALUE"
+        QUOTED="SINGLE_QUOTE_VALUE"
+        SIMPLE="FREE_VALUE"
+        
         get_token=Bio.PDB.mmCIF.MMCIFlex.get_token
         # are we looping?
         loop_flag=0
@@ -70,7 +78,8 @@ class MMCIF2Dict(UserDict):
                     pos=0
                     nr_fields=len(temp_list)
                     # Now fill all lists with the data
-                    while token>3:
+                    #while token>3:
+                    while token in (SEMICOLONS, DOUBLEQUOTED, QUOTED, SIMPLE):
                         pos=data_counter%nr_fields
                         data_counter=data_counter+1
                         temp_list[pos].append(value)
@@ -88,7 +97,8 @@ class MMCIF2Dict(UserDict):
                     next_token, data=get_token()  
                     # print token, value
                     mmcif_dict[value]=data
-                    if next_token<4:
+                    #if next_token<4:
+                    if next_token in (NAME, LOOP, DATA):
                         warnings.warn("ERROR: broken name-data pair "
                                       "(name-non data pair)!", RuntimeWarning)
                         # print token, value
@@ -115,9 +125,6 @@ class MMCIF2Dict(UserDict):
                 token, value=get_token()
                 # print token, value
 
-    def __getitem__(self, key):
-        return self.data[key]
-
 
 if __name__=="__main__":
 
@@ -128,10 +135,13 @@ if __name__=="__main__":
 
     filename=sys.argv[1]    
 
-    mmcif_dict=MMCIF2Dict(filename)
+    mmcif2dict=MMCIF2Dict(filename)
+    mmcif_dict = mmcif2dict.data
 
     entry = ""
     print "Now type a key ('q' to end, 'k' for a list of all keys):"
+    for key, value in mmcif_dict.items():
+        print key, value
     while(entry != "q"):
         entry = raw_input("MMCIF dictionary key ==> ")    
         if entry == "q":

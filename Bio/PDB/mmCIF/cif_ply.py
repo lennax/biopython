@@ -6,10 +6,9 @@
 
 import sys
 
+lexer = ""
 
-
-def get_token():
-
+def open_file(filename):
     tokens = (
         "COMMENT", 
         "NAME", 
@@ -20,7 +19,6 @@ def get_token():
         "DOUBLE_QUOTE_VALUE", 
         "SEMICOLON_VALUE",
     )
-
 
     def t_COMMENT(t): 
         r"\#.*\n"
@@ -76,14 +74,30 @@ def get_token():
         print "Failed to parse line %s: %s" % (t.lineno+1, line)
     
     import ply.lex as lex
+    global lexer
     lexer = lex.lex()
-    lexer.input(fh.read())
-    for token in lexer:
-        return (token.type, token.value)
+    with open(filename) as fh:
+        lexer.input(fh.read())
+
+def close_file():
+    #if fh:
+        #fh.close()
+    pass
     
-if len(sys.argv) !=2:
-    sys.stderr.write("Usage: python ply_test.py filename\n")
-    raise SystemExit
-filename = sys.argv[1]
-with open(filename) as fh:
-    print get_token()   
+def get_token():
+    token = lexer.token()
+    #print "Type: '%s' Value: '%s'" % (token.type, token.value)
+    #print type(token.type)
+    if token:
+        return (token.type, token.value)
+    else:
+        return (None, None)
+    
+#if len(sys.argv) !=2:
+    #sys.stderr.write("Usage: python ply_test.py filename\n")
+    #raise SystemExit
+#filename = sys.argv[1]
+#with open(filename) as fh:
+    #print get_token()   
+
+# vim:sw=4:ts=4:expandtab
