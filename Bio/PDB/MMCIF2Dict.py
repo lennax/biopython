@@ -140,8 +140,8 @@ if __name__=="__main__":
 
     entry = ""
     print "Now type a key ('q' to end, 'k' for a list of all keys):"
-    for key, value in mmcif_dict.items():
-        print key, value
+    #for key, value in mmcif_dict.items():
+        #print key, value
     while(entry != "q"):
         entry = raw_input("MMCIF dictionary key ==> ")    
         if entry == "q":

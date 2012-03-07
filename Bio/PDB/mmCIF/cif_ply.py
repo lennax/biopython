@@ -40,7 +40,7 @@ def open_file(filename):
         return t
         
     def t_FREE_VALUE(t): 
-        r"[^ \t\n]+"
+        r"""[^ \t\n\;\'\"]+"""
         #return 4
         return t
         
@@ -50,7 +50,7 @@ def open_file(filename):
         return t
         
     def t_DOUBLE_QUOTE_VALUE(t): 
-        r'''\"[^"\n]*\"'''
+        r'"[^"\n]*"'
         #return 6
         return t
         
