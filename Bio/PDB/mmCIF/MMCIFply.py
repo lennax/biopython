@@ -10,7 +10,7 @@ class MMCIFply:
     tokens = (
         "DATA",
         "LOOP",
-        "NAME",
+        "TAG",
         "COMMENT",
         "LEADING_SEMI",
         "SINGLE_QUOTE",
@@ -58,7 +58,7 @@ class MMCIFply:
         r"^\#.*$"
         return None
     
-    def t_ANY_NAME(self,t):
+    def t_ANY_TAG(self,t):
         r"_[^ \t\n]+"
         return t
     
