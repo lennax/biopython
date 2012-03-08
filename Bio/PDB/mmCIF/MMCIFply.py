@@ -54,9 +54,9 @@ class MMCIFply:
         t.lexer.pop_state()
         return t
 
-	def t_COMMENT(self,t):
-		r"^\#.*$"
-		return None
+    def t_COMMENT(self,t):
+        r"^\#.*$"
+        return None
     
     def t_ANY_NAME(self,t):
         r"_[^ \t\n]+"
@@ -69,6 +69,7 @@ class MMCIFply:
             t.lexer.lineno += t.value.count('\n')
             # leave semicolon section
             t.lexer.pop_state()
+            return t
         else:
             # start semicolon section
             t.lexer.push_state('semi')
