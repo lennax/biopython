@@ -1,11 +1,14 @@
 #!/usr/bin/python
 
 import sys
+import time
 import ply.yacc as yacc
 
 from CIFlex import CIFlex
 tokens = CIFlex.tokens
 #print tokens
+
+yacc_start = time.clock()
 
 #<DataItems>  :     <Tag> <WhiteSpace> <Value> |
 #                   <LoopHeader><LoopBody>
@@ -109,3 +112,5 @@ if len(sys.argv) == 2:
     with open(filename) as fh:
         result = parser.parse(fh.read())
         print result
+        yacc_end = time.clock() - yacc_start
+        print "Runtime: ", yacc_end
