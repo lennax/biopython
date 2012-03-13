@@ -117,7 +117,7 @@ if len(sys.argv) == 2:
     filename = sys.argv[1]
     
     with open(filename) as fh:
-        result = parser.parse(fh.read())
+        result = parser.parse(fh.read(), debug=1)
         print result
         yacc_end = time.clock() - yacc_start
         print "Runtime: ", yacc_end
