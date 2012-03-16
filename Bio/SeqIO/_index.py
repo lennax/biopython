@@ -296,7 +296,7 @@ class _SQLiteManySeqFilesDict(_IndexedSeqFileDict):
                 if filenames and len(filenames) != len(self._filenames):
                     con.close()
                     raise ValueError("Index file says %i files, not %i" \
-                                     % (len(self.filenames) != len(filenames)))
+                                     % (len(self._filenames), len(filenames)))
                 if filenames and filenames != self._filenames:
                     con.close()
                     raise ValueError("Index file has different filenames")
@@ -847,18 +847,18 @@ class UniprotRandomAccess(SequentialSeqFileRandomAccess):
         marker_re = self._marker_re
         end_entry_marker = _as_bytes("</entry>")
         handle.seek(offset)
-        data = handle.readline()
+        data = [handle.readline()]
         while True:
             line = handle.readline()
             i = line.find(end_entry_marker)
             if i != -1:
-                data += line[:i+8]
+                data.append(line[:i+8])
                 break
             if marker_re.match(line) or not line:
                 #End of file, or start of next record
                 raise ValueError("Didn't find end of record")
-            data += line
-        return data
+            data.append(line)
+        return _as_bytes("").join(data)
 
     def get(self, offset) :
         #TODO - Can we handle this directly in the parser?
