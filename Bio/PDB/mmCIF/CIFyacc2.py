@@ -4,8 +4,11 @@ import sys
 import time
 import ply.yacc as yacc
 
+# Import lexer and tokens, build lexer
 from CIFlex2 import CIFlex
-tokens = CIFlex.tokens
+m = CIFlex()
+m.build()
+tokens = m.tokens
 #print tokens
 
 yacc_start = time.clock()
@@ -17,6 +20,10 @@ def p_data_pairs(p):
 def p_data_pairs_empty(p):
     """data_pairs : empty"""
     p[0] = ()
+
+def p_data_data(p):
+    """data_pair : DATA"""
+    p[0] = ("data", p[1])
 
 def p_data_pair(p):
     """data_pair : TAG VALUE"""
