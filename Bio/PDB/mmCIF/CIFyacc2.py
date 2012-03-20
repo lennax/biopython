@@ -42,7 +42,7 @@ def p_loop(p):
 def p_loop_header(p):
     """loop_header : LOOP tags"""
     p[0] = (p[1],) + (p[2],)
-    
+
 def p_tag_tags(p):
     """tags : tags TAG"""
     p[0] = tuple(p[1]) + (p[2],)
@@ -61,14 +61,14 @@ def p_values_first(p):
 
 # Misc rules
 def p_error(p):
-    sys.stderr.write("Syntax error in '%s'\n" % p )
-    
+    sys.stderr.write("Syntax error in '%s'\n" % p)
+
 parser = yacc.yacc()
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
         filename = sys.argv[1]
-        
+
         with open(filename) as fh:
             filedump = fh.read()
         result = parser.parse(filedump, debug=1)
