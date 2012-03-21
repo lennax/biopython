@@ -27,7 +27,7 @@ class MMCIF2Dict():
     def _make_mmcif_dict(self): 
         """
         Loop through PLY token (type, value) pairs.
-        Stores data in class dict data. 
+        Store data in class dict named data.
 
         """
         # PLY requires tokenizer to return token names
