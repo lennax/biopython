@@ -8,6 +8,7 @@
 import os
 import warnings
 
+## Detect and import correct module
 lexer_missing = True
 try:
     if os.name != 'java':
@@ -19,7 +20,7 @@ except ImportError:
 if lexer_missing:
     try:
         # Import python PLY lexer
-        from mmCIF.CIFlex2 import CIFlex2 as MMCIFlex
+        from Bio.PDB.mmCIF.CIFlex2 import CIFlex2 as MMCIFlex
     except ImportError:
         print "Could not import a lexer."
         raise SystemExit
@@ -39,6 +40,7 @@ class MMCIF2Dict(dict):
         if not os.path.isfile(filename):
             raise IOError("File not found.")
         MMCIFlex.open_file(filename)
+        # Call superclass constructor with class data
         dict.__init__(self, **self._make_mmcif_dict())
         MMCIFlex.close_file()
 
