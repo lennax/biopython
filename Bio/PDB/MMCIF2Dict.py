@@ -7,18 +7,10 @@
 
 import os.path
 import warnings
-#import Bio.PDB.mmCIF.MMCIFlex
-import mmCIF.CIFlex2  # github:lennax branch ply2
+#from Bio.PDB.mmCIF.CIFlex2 import CIFlex
+from mmCIF.CIFlex2 import CIFlex  # temp local call
 
 class MMCIF2Dict():
-    # The token identifiers
-    NAME=1
-    LOOP=2
-    DATA=3
-    SEMICOLONS=4    
-    DOUBLEQUOTED=5
-    QUOTED=6
-    SIMPLE=7
 
     def __init__(self, filename):
         # this dict will contain the name/data pairs 
@@ -27,30 +19,23 @@ class MMCIF2Dict():
         self.data[None]=[]
         if not os.path.isfile(filename):
             raise IOError("File not found.")
-        #Bio.PDB.mmCIF.MMCIFlex.open_file(filename)
         with open(filename) as fh:
             filedump = fh.read()
-        self._lexer = mmCIF.CIFlex2.CIFlex(filedump)
+        self._lexer = CIFlex(filedump)
         self._make_mmcif_dict()
-        #Bio.PDB.mmCIF.MMCIFlex.close_file()
 
     def _make_mmcif_dict(self): 
-        # local copies
-        #NAME=self.NAME
-        #LOOP=self.LOOP
-        #DATA=self.DATA
-        #SEMICOLONS=self.SEMICOLONS
-        #DOUBLEQUOTED=self.DOUBLEQUOTED
-        #QUOTED=self.QUOTED
-        #SIMPLE=self.SIMPLE
+        """
+        Loop through PLY token (type, value) pairs.
+        Stores data in class dict data. 
 
+        """
         # PLY requires tokenizer to return token names
         NAME = "TAG"
         LOOP = "LOOP"
         DATA = "DATA"
         VALUE = "VALUE"
         
-        #get_token=Bio.PDB.mmCIF.MMCIFlex.get_token
         get_token = self._lexer.getToken
         # are we looping?
         loop_flag=0
@@ -80,7 +65,6 @@ class MMCIF2Dict():
                     pos=0
                     nr_fields=len(temp_list)
                     # Now fill all lists with the data
-                    #while token>3:
                     while token == VALUE:
                         pos=data_counter%nr_fields
                         data_counter=data_counter+1
@@ -99,7 +83,6 @@ class MMCIF2Dict():
                     next_token, data=get_token()  
                     # print token, value
                     mmcif_dict[value]=data
-                    #if next_token<4:
                     if next_token in (NAME, LOOP, DATA):
                         warnings.warn("ERROR: broken name-data pair "
                                       "(name-non data pair)!", RuntimeWarning)
@@ -107,12 +90,12 @@ class MMCIF2Dict():
                     else:   
                         # get next token
                         token=None
-            elif token==LOOP:
+            elif token == LOOP:
                 loop_flag=1
                 temp_list=[]
                 # get next token
                 token=None
-            elif token==DATA:
+            elif token == DATA:
                 mmcif_dict[value[0:5]]=value[5:]
                 token=None
             else:
@@ -137,13 +120,11 @@ if __name__=="__main__":
 
     filename=sys.argv[1]    
 
-    mmcif2dict=MMCIF2Dict(filename)
-    mmcif_dict = mmcif2dict.data
+    cif2dict = MMCIF2Dict(filename)
+    mmcif_dict = cif2dict.data
 
     entry = ""
     print "Now type a key ('q' to end, 'k' for a list of all keys):"
-    #for key, value in mmcif_dict.items():
-        #print key, value
     while(entry != "q"):
         entry = raw_input("MMCIF dictionary key ==> ")    
         if entry == "q":
