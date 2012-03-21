@@ -7,16 +7,22 @@
 
 import os
 import warnings
+
+lexer_missing = True
 try:
-    if os.name == 'java':
-        # Import python PLY lexer
-        from mmCIF.CIFlex2 import CIFlex2 as MMCIFlex
-    else:
+    if os.name != 'java':
         # Import C lexer
         import Bio.PDB.mmCIF.MMCIFlex as MMCIFlex
+        lexer_missing = False
 except ImportError:
-    print "Could not import a lexer."
-    raise SystemExit
+    pass  # Allow fallback to python lexer
+if lexer_missing:
+    try:
+        # Import python PLY lexer
+        from mmCIF.CIFlex2 import CIFlex2 as MMCIFlex
+    except ImportError:
+        print "Could not import a lexer."
+        raise SystemExit
 
 
 class MMCIF2Dict(dict):
