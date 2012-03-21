@@ -15,14 +15,15 @@ try:
         # Import C lexer
         import Bio.PDB.mmCIF.MMCIFlex as MMCIFlex
         lexer_missing = False
-except ImportError:
-    pass  # Allow fallback to python lexer
+except ImportError as errc:
+    warnings.warn("Could not import C lexer: %s" % errc, RuntimeWarning)
 if lexer_missing:
     try:
         # Import python PLY lexer
-        from Bio.PDB.mmCIF.CIFlex2 import CIFlex2 as MMCIFlex
-    except ImportError:
-        print "Could not import a lexer."
+        from Bio.PDB.mmCIF.CIFlex2 import CIFlex as MMCIFlex
+        lexer_missing = False
+    except ImportError as errpy:
+        warnings.warn("Could not import Python lexer: %s" % errpy, RuntimeWarning)
         raise SystemExit
 
 
