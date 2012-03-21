@@ -7,7 +7,8 @@
 
 import os.path
 import warnings
-import Bio.PDB.mmCIF.MMCIFlex
+#import Bio.PDB.mmCIF.MMCIFlex
+import mmCIF.CIFlex2  # github:lennax branch ply2
 
 class MMCIF2Dict():
     # The token identifiers
@@ -26,9 +27,12 @@ class MMCIF2Dict():
         self.data[None]=[]
         if not os.path.isfile(filename):
             raise IOError("File not found.")
-        Bio.PDB.mmCIF.MMCIFlex.open_file(filename)
+        #Bio.PDB.mmCIF.MMCIFlex.open_file(filename)
+        with open(filename) as fh:
+            filedump = fh.read()
+        self._lexer = mmCIF.CIFlex2.CIFlex(filedump)
         self._make_mmcif_dict()
-        Bio.PDB.mmCIF.MMCIFlex.close_file()
+        #Bio.PDB.mmCIF.MMCIFlex.close_file()
 
     def _make_mmcif_dict(self): 
         # local copies
@@ -41,15 +45,13 @@ class MMCIF2Dict():
         #SIMPLE=self.SIMPLE
 
         # PLY requires tokenizer to return token names
-        NAME="NAME"
-        LOOP="LOOP"
-        DATA="DATA"
-        SEMICOLONS="SEMICOLON_VALUE"
-        DOUBLEQUOTED="DOUBLE_QUOTE_VALUE"
-        QUOTED="SINGLE_QUOTE_VALUE"
-        SIMPLE="FREE_VALUE"
+        NAME = "TAG"
+        LOOP = "LOOP"
+        DATA = "DATA"
+        VALUE = "VALUE"
         
-        get_token=Bio.PDB.mmCIF.MMCIFlex.get_token
+        #get_token=Bio.PDB.mmCIF.MMCIFlex.get_token
+        get_token = self._lexer.getToken
         # are we looping?
         loop_flag=0
         # list of names in loop
@@ -62,10 +64,10 @@ class MMCIF2Dict():
         mmcif_dict=self.data
         # loop until EOF (token==0)
         while token:
-            if token==NAME:
+            if token == NAME:
                 if loop_flag:
                     # Make lists for all the names in the loop
-                    while token==NAME:
+                    while token == NAME:
                         # create  a list for each name encountered in loop
                         new_list=mmcif_dict[value]=[]
                         temp_list.append(new_list)
@@ -79,7 +81,7 @@ class MMCIF2Dict():
                     nr_fields=len(temp_list)
                     # Now fill all lists with the data
                     #while token>3:
-                    while token in (SEMICOLONS, DOUBLEQUOTED, QUOTED, SIMPLE):
+                    while token == VALUE:
                         pos=data_counter%nr_fields
                         data_counter=data_counter+1
                         temp_list[pos].append(value)
