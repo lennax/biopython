@@ -20,7 +20,7 @@ except ImportError as errc:
 if lexer_missing:
     try:
         # Import python PLY lexer
-        from Bio.PDB.mmCIF.CIFlex2 import CIFlex as MMCIFlex
+        from Bio.PDB.mmCIF.CIFlex2 import CIFlex
         lexer_missing = False
     except ImportError as errpy:
         warnings.warn("Could not import Python lexer: %s" % errpy, RuntimeWarning)
@@ -40,6 +40,8 @@ class MMCIF2Dict(dict):
     def __init__(self, filename):
         if not os.path.isfile(filename):
             raise IOError("File not found.")
+        if "CIFlex" in dir():
+            MMCIFlex = CIFlex(filename)
         MMCIFlex.open_file(filename)
         # Call superclass constructor with class data
         dict.__init__(self, **self._make_mmcif_dict())
