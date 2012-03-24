@@ -20,7 +20,7 @@ except ImportError as errc:
 if lexer_missing:
     try:
         # Import python PLY lexer
-        from Bio.PDB.mmCIF.CIFlex2 import CIFlex
+        from Bio.PDB.mmCIF.CIFlex import CIFlex
         lexer_missing = False
     except ImportError as errpy:
         warnings.warn("Could not import Python lexer: %s" % errpy, RuntimeWarning)
