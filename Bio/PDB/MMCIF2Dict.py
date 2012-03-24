@@ -92,7 +92,8 @@ class MMCIF2Dict(dict):
                     pos=0
                     nr_fields=len(temp_list)
                     # Now fill all lists with the data
-                    while token>3:
+                    #while token>3:
+                    while token in (SEMICOLONS, DOUBLEQUOTED, QUOTED, SIMPLE):
                         pos=data_counter%nr_fields
                         data_counter=data_counter+1
                         temp_list[pos].append(value)
@@ -110,7 +111,8 @@ class MMCIF2Dict(dict):
                     next_token, data=get_token()  
                     # print token, value
                     mmcif_dict[value]=data
-                    if next_token<4:
+                    #if next_token<4:
+                    if next_token in (NAME, LOOP, DATA):
                         warnings.warn("ERROR: broken name-data pair "
                                       "(name-non data pair)!", RuntimeWarning)
                         # print token, value
@@ -152,6 +154,8 @@ if __name__=="__main__":
 
     entry = ""
     print "Now type a key ('q' to end, 'k' for a list of all keys):"
+    #for key, value in mmcif_dict.items():
+        #print key, value
     while(entry != "q"):
         entry = raw_input("MMCIF dictionary key ==> ")    
         if entry == "q":
