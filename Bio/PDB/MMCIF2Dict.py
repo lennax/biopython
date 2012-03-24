@@ -13,7 +13,7 @@ lexer_missing = True
 try:
     if os.name != 'java':
         # Import C lexer
-        import Bio.PDB.mmCIF.MMCIFlex as MMCIFlex
+        from Bio.PDB.mmCIF.MMCIFlex import MMCIFlex as CIFlex
         lexer_missing = False
 except ImportError as errc:
     warnings.warn("Could not import C lexer: %s" % errc, RuntimeWarning)
@@ -40,12 +40,10 @@ class MMCIF2Dict(dict):
     def __init__(self, filename):
         if not os.path.isfile(filename):
             raise IOError("File not found.")
-        if "CIFlex" in dir():
-            MMCIFlex = CIFlex(filename)
-        MMCIFlex.open_file(filename)
+        # Init module with filename
+        self._lexer = CIFlex(filename)
         # Call superclass constructor with class data
         dict.__init__(self, **self._make_mmcif_dict())
-        MMCIFlex.close_file()
 
     def _make_mmcif_dict(self): 
         """
@@ -64,7 +62,8 @@ class MMCIF2Dict(dict):
         DOUBLEQUOTED=self.DOUBLEQUOTED
         QUOTED=self.QUOTED
         SIMPLE=self.SIMPLE
-        get_token=MMCIFlex.get_token
+        # Point local function to instance function
+        get_token = self._lexer.get_token
         # are we looping?
         loop_flag=0
         # list of names in loop
@@ -173,4 +172,3 @@ if __name__=="__main__":
                 print value
         except KeyError:
             print "No such key found."
-
