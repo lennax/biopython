@@ -5,9 +5,26 @@
 
 """Turn an mmCIF file into a dictionary."""
 
-import os.path
+import os
 import warnings
-import Bio.PDB.mmCIF.MMCIFlex as MMCIFlex
+
+## Detect and import correct module
+lexer_missing = True
+try:
+    if os.name != 'java':
+        # Import C lexer
+        import Bio.PDB.mmCIF.MMCIFlex as MMCIFlex
+        lexer_missing = False
+except ImportError as errc:
+    warnings.warn("Could not import C lexer: %s" % errc, RuntimeWarning)
+if lexer_missing:
+    try:
+        # Import python PLY lexer
+        from Bio.PDB.mmCIF.CIFlex2 import CIFlex
+        lexer_missing = False
+    except ImportError as errpy:
+        warnings.warn("Could not import Python lexer: %s" % errpy, RuntimeWarning)
+        raise SystemExit
 
 
 class MMCIF2Dict(dict):
@@ -23,7 +40,10 @@ class MMCIF2Dict(dict):
     def __init__(self, filename):
         if not os.path.isfile(filename):
             raise IOError("File not found.")
+        if "CIFlex" in dir():
+            MMCIFlex = CIFlex(filename)
         MMCIFlex.open_file(filename)
+        # Call superclass constructor with class data
         dict.__init__(self, **self._make_mmcif_dict())
         MMCIFlex.close_file()
 
