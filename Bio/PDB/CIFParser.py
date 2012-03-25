@@ -1,21 +1,28 @@
 # Copyright (C) 2002, Thomas Hamelryck (thamelry@binf.ku.dk)
+#
+# Modifications copyright 2012 Lenna X. Peterson (arklenna@gmail.com)
+#
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
 
-"""mmCIF parser (partly implemented in C)."""
+
+"""Builds PDB structure from CIF file.
+    Uses PyCIFRW (CifFile module) to obtain dict.
+
+"""
 
 from string import letters
 
 import numpy
 
-#from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 import CifFile
 from Bio.PDB.StructureBuilder import StructureBuilder
 
 
 class MMCIFParser(object):
     def get_structure(self, structure_id, filename):
+        # Read filename and attempt to pick block
         cf = CifFile.ReadCif(filename, scantype="flex")
         if len(cf) == 1:
             self._mmcif_dict = cf[cf.keys()[0]]
@@ -27,7 +34,7 @@ class MMCIFParser(object):
             print """Given filename '%s' contains multiple data blocks.
                 Specify the desired data block with the structure_id
                 argument."""
-        #self._mmcif_dict=MMCIF2Dict(filename)
+            raise SystemExit
         self._structure_builder=StructureBuilder()
         self._build_structure(structure_id)
         return self._structure_builder.get_structure()
