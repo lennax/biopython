@@ -261,6 +261,9 @@ static void yy_flex_free YY_PROTO(( void * ));
 
 #define YY_AT_BOL() (yy_current_buffer->yy_at_bol)
 
+
+#define yywrap() 1
+#define YY_SKIP_YYWRAP
 typedef unsigned char YY_CHAR;
 FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
 typedef int yy_state_type;
@@ -406,7 +409,7 @@ SINGLE QUOTE 	(eg. 'value')			6
 FREE 			(eg. value )			7
 
 */
-#line 410 "lex.yy.c"
+#line 413 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -560,10 +563,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
 
-#line 23 "mmcif.lex"
+#line 24 "mmcif.lex"
 
 
-#line 567 "lex.yy.c"
+#line 570 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -649,55 +652,55 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 25 "mmcif.lex"
+#line 26 "mmcif.lex"
 /* ignore */			
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 27 "mmcif.lex"
+#line 28 "mmcif.lex"
 { return 1; }	
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 29 "mmcif.lex"
+#line 30 "mmcif.lex"
 { return 2; }					
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 31 "mmcif.lex"
+#line 32 "mmcif.lex"
 { return 3;	}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 33 "mmcif.lex"
+#line 34 "mmcif.lex"
 { return 4; }	
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 35 "mmcif.lex"
+#line 36 "mmcif.lex"
 { return 5; }	
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 37 "mmcif.lex"
+#line 38 "mmcif.lex"
 { return 6; }	
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 39 "mmcif.lex"
+#line 40 "mmcif.lex"
 { return 7; }	
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 41 "mmcif.lex"
+#line 42 "mmcif.lex"
 /* ignore */
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 43 "mmcif.lex"
+#line 44 "mmcif.lex"
 ECHO;
 	YY_BREAK
-#line 701 "lex.yy.c"
+#line 704 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1585,7 +1588,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 43 "mmcif.lex"
+#line 44 "mmcif.lex"
 
 
 
@@ -1594,8 +1597,9 @@ void mmcif_set_file(FILE *fp)
 	yyin=fp;
 }	
 
-int mmcif_get_token()
+int mmcif_get_token(void)
 {
+	extern int yylex(void);
 	return yylex();
 }
 
@@ -1603,6 +1607,4 @@ char *mmcif_get_string(void)
 {
 	return yytext;
 }	
-
-
 
