@@ -11,6 +11,11 @@
 import os
 import warnings
 
+## Add biopython dir to sys.path for debugging
+if __name__=="__main__":
+    import sys
+    sys.path.insert(1, os.path.join(sys.path[0], "..", ".."))
+
 ## Detect and import correct module
 lexer_missing = True
 try:
