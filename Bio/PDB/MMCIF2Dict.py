@@ -16,23 +16,25 @@ if __name__=="__main__":
     import sys
     sys.path.insert(1, os.path.join(sys.path[0], "..", ".."))
 
+from Bio.PDB.mmCIF.MMCIFlex import MMCIFlex as CIFlex
+
 ## Detect and import correct module
-lexer_missing = True
-try:
-    if os.name != 'java':
-        # Import C lexer
-        from Bio.PDB.mmCIF.MMCIFlex import MMCIFlex as CIFlex
-        lexer_missing = False
-except ImportError as errc:
-    warnings.warn("Could not import C lexer: %s" % errc, RuntimeWarning)
-if lexer_missing:
-    try:
-        # Import python PLY lexer
-        from Bio.PDB.mmCIF.CIFlex import CIFlex
-        lexer_missing = False
-    except ImportError as errpy:
-        warnings.warn("Could not import Python lexer: %s" % errpy, RuntimeWarning)
-        raise SystemExit
+#lexer_missing = True
+#try:
+    #if os.name != 'java':
+        ## Import C lexer
+        #from Bio.PDB.mmCIF.MMCIFlex import MMCIFlex as CIFlex
+        #lexer_missing = False
+#except ImportError as errc:
+    #warnings.warn("Could not import C lexer: %s" % errc, RuntimeWarning)
+#if lexer_missing:
+    #try:
+        ## Import python PLY lexer
+        #from Bio.PDB.mmCIF.CIFlex import CIFlex
+        #lexer_missing = False
+    #except ImportError as errpy:
+        #warnings.warn("Could not import Python lexer: %s" % errpy, RuntimeWarning)
+        #raise SystemExit
 
 
 class MMCIF2Dict(dict):
