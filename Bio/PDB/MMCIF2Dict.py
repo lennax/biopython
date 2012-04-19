@@ -11,30 +11,7 @@
 import os
 import warnings
 
-## Add biopython dir to sys.path for debugging
-if __name__=="__main__":
-    import sys
-    sys.path.insert(1, os.path.join(sys.path[0], "..", ".."))
-
-from Bio.PDB.mmCIF.MMCIFlex import MMCIFlex as CIFlex
-
-## Detect and import correct module
-#lexer_missing = True
-#try:
-    #if os.name != 'java':
-        ## Import C lexer
-        #from Bio.PDB.mmCIF.MMCIFlex import MMCIFlex as CIFlex
-        #lexer_missing = False
-#except ImportError as errc:
-    #warnings.warn("Could not import C lexer: %s" % errc, RuntimeWarning)
-#if lexer_missing:
-    #try:
-        ## Import python PLY lexer
-        #from Bio.PDB.mmCIF.CIFlex import CIFlex
-        #lexer_missing = False
-    #except ImportError as errpy:
-        #warnings.warn("Could not import Python lexer: %s" % errpy, RuntimeWarning)
-        #raise SystemExit
+from Bio.PDB.mmCIF.MMCIFlex import MMCIFlex
 
 
 class MMCIF2Dict(dict):
@@ -51,7 +28,7 @@ class MMCIF2Dict(dict):
         if not os.path.isfile(filename):
             raise IOError("File not found.")
         # Init module with filename
-        self._lexer = CIFlex(filename)
+        self._lexer = MMCIFlex(filename)
         # Call superclass constructor with class data
         dict.__init__(self, **self._make_mmcif_dict())
 
