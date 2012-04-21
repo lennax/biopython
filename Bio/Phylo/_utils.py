@@ -133,15 +133,10 @@ def draw_graphviz(tree, label_func=str, prog='twopi', args='',
     G = to_networkx(tree)
     Gi = networkx.convert_node_labels_to_integers(G, discard_old_labels=False)
     try:
-        posi = networkx.pygraphviz_layout(Gi, prog, args=args)
+        posi = networkx.graphviz_layout(Gi, prog, args=args)
     except ImportError:
-        try:
-            posi = networkx.pydot_layout(Gi, prog)
-        except ImportError:
-            raise MissingPythonDependencyError(
-                    "Install PyGraphviz or Pydot if you want to use "
-                    "draw_graphviz.")
-    posn = dict((n, posi[Gi.node_labels[n]]) for n in G)
+        raise MissingPythonDependencyError(
+                "Install PyGraphviz or pydot if you want to use draw_graphviz.")
 
     def get_label_mapping(G, selection):
         for node in G.nodes():
@@ -166,6 +161,8 @@ def draw_graphviz(tree, label_func=str, prog='twopi', args='',
         kwargs['width'] = [isinstance(e[2], dict) and
                            e[2].get('width', 1.0) or 1.0
                            for e in G.edges(data=True)]
+
+    posn = dict((n, posi[Gi.node_labels[n]]) for n in G)
     networkx.draw(G, posn, labels=labels, node_color=node_color, **kwargs)
 
 
@@ -386,7 +383,8 @@ def draw(tree, label_func=str, do_show=True, show_confidence=True,
         # Add label above the branch (optional)
         conf_label = format_branch_label(clade)
         if conf_label:
-            axes.text(x_start, y_here, ' %s' % conf_label, fontsize='small')
+            axes.text(0.5*(x_start + x_here), y_here, conf_label,
+                    fontsize='small', horizontalalignment='center')
         if clade.clades:
             # Draw a vertical line connecting all children
             y_top = y_posns[clade.clades[0]]
