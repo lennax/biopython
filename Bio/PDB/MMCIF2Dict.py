@@ -30,7 +30,7 @@ class MMCIF2Dict(dict):
         # Init module with filename
         self._lexer = MMCIFlex(filename)
         # Call superclass constructor with class data
-        dict.__init__(self, **self._make_mmcif_dict())
+        dict.__init__(self, self._make_mmcif_dict())
 
     def _make_mmcif_dict(self): 
         """
