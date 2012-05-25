@@ -28,9 +28,8 @@ class PyvcfIterator(SequenceIterator):
         """
         Create a VCF Reader.
         """
-        self._parser = Reader(fsock=handle, compressed=compressed, 
+        self._parser = Reader(fsock=handle, compressed=compressed, \
                              prepend_chr=prepend_chr)
-
 
     def __iter__(self):
         return self
@@ -39,7 +38,47 @@ class PyvcfIterator(SequenceIterator):
         """
         Return the next line in the file.
         """
-        return self._parser.next()
+        #return self._parser.next()
+        row = self._parser.next()
+        # Build SeqFeatures first
+        samples = row.samples
+        if samples is not None:
+            rec_features = list()
+            for samp in samples:
+                feat_id = samp.sample
+                feat_type = samp.gt_type,
+                feat_qualifiers = dict(
+                    called = samp.called,
+                    data = samp.data,
+                    gt_bases = samp.gt_bases,
+                    is_het = samp.is_het,
+                    is_variant = samp.is_variant,
+                    phased = samp.phased
+                )
+                seq_feat = SeqFeature(type=feat_type, id=feat_id, \
+                                      qualifiers=feat_qualifiers)
+                rec_features.append(seq_feat)
+
+        # Build SeqRecord and return
+        rec_id = row.ID
+        rec_name = "" # XXX what here?  
+        rec_seq = ""  # XXX what here?
+        rec_annotations = dict(
+            INFO = row.INFO,
+            FORMAT = row.FORMAT,
+            CHROM = row.CHROM,
+            POS = row.POS,
+            FILTER = row.FILTER,
+            QUAL = row.QUAL,
+            _sample_indexes = row._sample_indexes,
+            alleles = row.alleles,
+            ALT = row.ALT,
+            REF = row.REF,
+        )
+        seq_rec = SeqRecord(id=rec_id, seq=rec_seq, name=rec_name, \
+                           features=rec_features, annotations=rec_annotations)
+        return seq_rec
+            
 
 if __name__ == "__main__":
     import sys
@@ -49,6 +88,9 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     with open(filename, "rb") as fh:
         itervcf = PyvcfIterator(fh)
-        #print itervcf.next()
-        for rec in itervcf:
-            print rec
+        rec1 = itervcf.next()
+        print rec1
+        for feature in rec1.features:
+            print feature
+        #for rec in itervcf:
+            #print rec
