@@ -29,20 +29,21 @@ class VariantIO(object):
 
         #print self.compressed, self.filename, self.filetype
 
+        parsers = dict(
+            vcf = PyvcfIterator,
+            #gvf = GvfIterator,
+        )
+
+        # the class isn't currently reusable but it's simpler to just set both
+        if vcfreader is not None:
+            parsers['vcf'] = vcfreader
+        if gvfreader is not None:
+            parsers['gvf'] = gvfreader
+
         fh = open(filename, "rb")
-        default_vcfreader = PyvcfIterator
-        #default_gvfreader = BCBioGFFIO
-        if self.filetype == "vcf":
-            if vcfreader is not None:
-                self.parser = vcfreader
-            else:
-                self.parser = default_vcfreader(fh)
-        elif self.filetype == "gvf":
-            if gvfreader is not None:
-                self.parser = gvfreader
-            else:
-                self.parser = default_gvfreader(fh)
-        else:
+        try:
+            parsers[self.filetype](fh)
+        except KeyError:
             raise RuntimeError('Given filetype is not valid')
 
     def _guess_filetype(self):
