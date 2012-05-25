@@ -13,7 +13,10 @@ from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from Bio.SeqIO.Interfaces import SequenceIterator
 
-from vcf import Reader, Writer
+try:
+    from cyvcf import Reader, Writer
+except ImportError:
+    from vcf import Reader, Writer
 
 
 class PyvcfIterator(SequenceIterator):
