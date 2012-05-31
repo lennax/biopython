@@ -1,3 +1,5 @@
+import json
+
 try:
     from cyvcf import Reader, Writer
 except ImportError:
@@ -22,10 +24,44 @@ class Pyvcf2db(object):
             infos = self._parser.infos,
             metadata = self._parser.metadata,
         )
-        db.metadata_insert(filename=filename, misc=file_data)
+        self.metadata = db.metadata_insert(filename=filename, 
+                                           misc=file_data)
 
     def next(self):
         row = self._parser.next()
+        site_dict = dict(
+            metadata = self.metadata,
+            accession = None, # I think this is ##reference
+            position = row.POS, 
+            site_id = row.ID, 
+        )
+        site_dict['misc'] = dict(
+            chrom = row.CHROM,
+            info = row.INFO,
+            filter = row.FILTER,
+            qual = row.QUAL,
+            sample_indexes = row._sample_indexes,
+            alleles = json.dumps(row.alleles), # etc
+        )
+        site_id = db.site_insert(**site_dict)
+
+        for samp in row.samples:
+            variant_dict = dict(
+                site = site_id,
+                name = samp.sample,
+                ref = row.REF,  # XXX is this correct?
+                alt = samp.gt_bases,  # ditto
+            )
+            variant_dict['misc'] = dict(
+                type = samp.gt_type,
+                called = samp.called,
+                data = samp.data,
+                is_get = samp.is_het,
+                is_variant = samp.is_variant,
+                phased = samp.phased
+            )
+
+            db.variant_insert(**variant_dict)
 
 
 if __name__ == "__main__":
@@ -36,4 +72,5 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename)
+    parser.next()
 
