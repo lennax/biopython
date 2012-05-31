@@ -163,8 +163,8 @@ class VariantSqlite(VariantDB):
         )"""
 
         for k, v in schema.iteritems():
-            self.cursor.execute('''CREATE TABLE IF NOT EXISTS %s %s''' 
-                                % (k, v))
+            create_stmt = "CREATE TABLE IF NOT EXISTS %s %s" % (k, v)
+            self.cursor.execute(create_stmt)
         self.conn.commit()
 
     def __del__(self):
@@ -175,7 +175,12 @@ class VariantSqlite(VariantDB):
             pass
 
     def metadata_insert(self, filename, misc):
-        """Insert a row into metadata. Return id of inserted row."""
+        """
+        Insert a row into metadata. Return id of inserted row.
+        misc is expected to be a dict.
+        All other parameters must be string or int. 
+
+        """
         insert_string = "INSERT INTO metadata VALUES (:id, :filename, \
                         :misc, :create_date, :update_date)"
         time = self._time()
@@ -186,7 +191,12 @@ class VariantSqlite(VariantDB):
         return self.cursor.lastrowid
 
     def site_insert(self, metadata, accession, position, site_id, misc):
-        """Insert a row into site. Return id of inserted row."""
+        """
+        Insert a row into site. Return id of inserted row.
+        misc is expected to be a dict.
+        All other parameters must be string or int. 
+
+        """
         insert_string = "INSERT INTO site VALUES (\
             :id, :metadata, :accession, :position, :site_id, :misc, \
             :create_date, :update_date)"
@@ -199,7 +209,12 @@ class VariantSqlite(VariantDB):
         return self.cursor.lastrowid
 
     def variant_insert(self, site, name, ref, alt, misc):
-        """Insert a row into variant. Return id of inserted row."""
+        """
+        Insert a row into variant. Return id of inserted row.
+        misc is expected to be a dict.
+        All other parameters must be string or int. 
+
+        """
         insert_string = "INSERT INTO variant VALUES (:id, :site, \
             :name, :ref, :alt, :misc, :create_date, :update_date)"
         time = self._time()
