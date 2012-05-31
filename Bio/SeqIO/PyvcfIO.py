@@ -18,6 +18,61 @@ try:
 except ImportError:
     from vcf import Reader, Writer
 
+class VarSeqRecord(SeqRecord):
+    """
+    This subclass of SeqRecord allows variant-related items to be retrieved
+    from the annotations dictionary as class properties. 
+
+    """
+    def __init__(self, **kwargs):
+        SeqRecord.__init__(self, **kwargs)
+
+        self.allowed_record_properties = (
+            "CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER",
+            "INFO", "FORMAT", "alleles", "_sample_indexes",
+        )
+
+    def __getattr__(self, name):
+        """
+        After an AttributeError, __getattr__ is called. If the name matches
+        an allowed property, this gets the name from the annotations dict.
+        Otherwise, a class AttributeError is raised.
+
+        """
+        if name in self.allowed_record_properties:
+            return self.annotations.get(name)
+        else:
+            raise AttributeError("Object '%s' has no attribute '%s'" % \
+                                (self.__class__.__name__, name))
+
+class VarSeqFeature(SeqFeature):
+    """
+    This subclass of SeqFeature allows variant-related items to be retrieved
+    from the qualifiers dictionary as class properties.
+
+    """
+    def __init__(self, **kwargs):
+        SeqFeature.__init__(self, **kwargs)
+
+        self.allowed_feature_properties = (
+            "called", "data", "gt_bases", "gt_type", "is_het", "is_variant",
+            "phased", "sample", 
+        )
+
+    def __getattr__(self, name):
+        """
+        After an AttributeError, __getattr__ is called. If the name matches
+        an allowed property, this gets the name from the qualifiers dict.
+        Otherwise, a class AttributeError is raised.
+
+        """
+        if name in self.allowed_feature_properties:
+            return self.qualifiers.get(name)
+        else:
+            raise AttributeError("Object '%s' has no attribute '%s'" % \
+                                (self.__class__.__name__, name))
+
+
 
 class PyvcfIterator(SequenceIterator):
     """
@@ -48,6 +103,7 @@ class PyvcfIterator(SequenceIterator):
                 feat_id = samp.sample
                 feat_type = samp.gt_type,
                 feat_qualifiers = dict(
+                    sample = samp.sample,
                     called = samp.called,
                     data = samp.data,
                     gt_bases = samp.gt_bases,
@@ -55,7 +111,7 @@ class PyvcfIterator(SequenceIterator):
                     is_variant = samp.is_variant,
                     phased = samp.phased
                 )
-                seq_feat = SeqFeature(type=feat_type, id=feat_id, \
+                seq_feat = VarSeqFeature(type=feat_type, id=feat_id, \
                                       qualifiers=feat_qualifiers)
                 rec_features.append(seq_feat)
 
@@ -64,6 +120,7 @@ class PyvcfIterator(SequenceIterator):
         rec_name = "" # XXX what here?  
         rec_seq = ""  # XXX what here?
         rec_annotations = dict(
+            ID = row.ID,
             INFO = row.INFO,
             FORMAT = row.FORMAT,
             CHROM = row.CHROM,
@@ -75,7 +132,7 @@ class PyvcfIterator(SequenceIterator):
             ALT = row.ALT,
             REF = row.REF,
         )
-        seq_rec = SeqRecord(id=rec_id, seq=rec_seq, name=rec_name, \
+        seq_rec = VarSeqRecord(id=rec_id, seq=rec_seq, name=rec_name, \
                            features=rec_features, annotations=rec_annotations)
         return seq_rec
             
@@ -89,8 +146,10 @@ if __name__ == "__main__":
     with open(filename, "rb") as fh:
         itervcf = PyvcfIterator(fh)
         rec1 = itervcf.next()
-        print rec1
-        for feature in rec1.features:
-            print feature
+        print rec1.ID, rec1.POS
+        feature1 = rec1.features[0]
+        print feature1.sample, feature1.gt_bases
+        #for feature in rec1.features:
+            #print feature
         #for rec in itervcf:
             #print rec
