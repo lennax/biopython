@@ -7,17 +7,14 @@
 
 import os
 
-#from Bio.SeqIO import PyvcfIO
 from PyvcfIO import PyvcfIterator
 
 class VariantIO(object):
 
-    def __init__(self, filename, filetype=None, compressed=False,
-                 vcfreader=None, gvfreader=None):
+    def __init__(self, filename, filetype=None, compressed=False):
         """
         Currently supported filetypes are "vcf" and "gvf".
         If filetype is not specified, guessed from file extension
-        Uses the default parser wrappers unless otherwise specified.
         """
         self.filename = filename
         self.filetype = filetype
@@ -34,17 +31,14 @@ class VariantIO(object):
             #gvf = GvfIterator,
         )
 
-        # the class isn't currently reusable but it's simpler to just set both
-        if vcfreader is not None:
-            parsers['vcf'] = vcfreader
-        if gvfreader is not None:
-            parsers['gvf'] = gvfreader
-
-        fh = open(filename, "rb")
         try:
-            parsers[self.filetype](fh)
+            parse_func = parsers[self.filetype]
         except KeyError:
             raise RuntimeError('Given filetype is not valid')
+
+        # TODO: handle compressed
+        #fh = open(filename, "rb")
+        #self.parser = parse_func(fh)
 
     def _guess_filetype(self):
         """
