@@ -28,24 +28,24 @@ class VariantDB(object):
         site (
             id INTEGER PRIMARY KEY,
             metadata INTEGER,
-            FOREIGN KEY(metadata) REFERENCES metadata(id),
             accession TEXT,
             position INTEGER,
             site_id TEXT,
             misc TEXT,
             create_date TEXT,
             update_date TEXT,
+            FOREIGN KEY(metadata) REFERENCES metadata(id),
         )
         variant (
             id INTEGER PRIMARY KEY,
             site INTEGER,
-            FOREIGN KEY(site) REFERENCES site(id),
             name TEXT,
             ref TEXT,
             alt TEXT,
             misc TEXT,
             create_date TEXT,
             update_date TEXT
+            FOREIGN KEY(site) REFERENCES site(id),
         )
 
         """
@@ -80,13 +80,13 @@ class VariantDB(object):
         site (
             id INTEGER PRIMARY KEY,
             metadata INTEGER,
-            FOREIGN KEY(metadata) REFERENCES metadata(id),
             accession TEXT,
             position INTEGER,
             site_id TEXT,
             misc TEXT,
             create_date TEXT,
             update_date TEXT
+            FOREIGN KEY(metadata) REFERENCES metadata(id),
         )
         Set create_date and update_date to current datetime.
         Return id.
@@ -101,13 +101,13 @@ class VariantDB(object):
         variant (
             id INTEGER PRIMARY KEY,
             site INTEGER,
-            FOREIGN KEY(site) REFERENCES site(id),
             name TEXT,
             ref TEXT,
             alt TEXT,
             misc TEXT,
             create_date TEXT,
             update_date TEXT
+            FOREIGN KEY(site) REFERENCES site(id),
         )
         Set create_date and update_date to current datetime.
  
@@ -148,7 +148,7 @@ class VariantSqlite(VariantDB):
             misc TEXT,
             create_date TEXT,
             update_date TEXT,
-            FOREIGN KEY(metadata) REFERENCES metadata(id)
+            FOREIGN KEY (metadata) REFERENCES metadata(id)
         )"""
         schema['variant'] = """(
             id INTEGER PRIMARY KEY,
@@ -159,7 +159,7 @@ class VariantSqlite(VariantDB):
             misc TEXT,
             create_date TEXT,
             update_date TEXT,
-            FOREIGN KEY(site) REFERENCES site(id)
+            FOREIGN KEY (site) REFERENCES site(id)
         )"""
 
         for k, v in schema.iteritems():
