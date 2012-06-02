@@ -59,10 +59,10 @@ class VariantDB(object):
     @abstractmethod
     def insert_row(self, table, **kwargs):
         """
-        Insert a row into the table. 
+        Insert a row into the table.
         Set create_date and update_date to current datetime.
         Return id.
-   
+
         """
         raise NotImplementedError
 
@@ -84,14 +84,14 @@ class VariantSqlite(VariantDB):
         self.conn = sqlite3.connect(dbname)
         self.cursor = self.conn.cursor()
         self.schema = dict(
-            metadata = [
+            metadata=[
                 ('id', 'INTEGER PRIMARY KEY'),
                 ('filename', 'TEXT'),
                 ('misc', 'TEXT'),
                 ('create_date', 'TEXT'),
                 ('update_date', 'TEXT'),
             ],
-            site = [
+            site=[
                 ('id', 'INTEGER PRIMARY KEY'),
                 ('metadata', 'INTEGER'),
                 ('accession', 'TEXT'),
@@ -105,7 +105,7 @@ class VariantSqlite(VariantDB):
                 ('update_date', 'TEXT'),
                 ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
             ],
-            variant = [
+            variant=[
                 ('id', 'INTEGER PRIMARY KEY'),
                 ('site', 'INTEGER'),
                 ('name', 'TEXT'),
@@ -134,7 +134,9 @@ class VariantSqlite(VariantDB):
 
     def insert_row(self, table, **insert_dict):
         """Insert a row into a table. Return id of inserted row."""
-        values = ", ".join(["".join([":", x[0]]) for x in self.schema[table] if x[0] != "FOREIGN KEY"])
+        values = ", ".join(  # join items by comma
+            ("".join((":", x[0]))  # prepend keys with colon
+            for x in self.schema[table] if x[0] != "FOREIGN KEY"))
         insert_string = "INSERT INTO %s VALUES (%s)" % (table, values)
         time = self._time()
         insert_dict['id'] = None
@@ -150,12 +152,27 @@ class VariantSqlite(VariantDB):
 
     def query(self, query):
         pass
-    
+
 if __name__ == "__main__":
     db = VariantSqlite("test.db")
-    meta_row = db.insert_row(table="metadata", filename="myfile", misc=json.dumps(dict(FORMATS="blahblah", INFOS="bloobloo")))
-    site_row = db.insert_row(table="site", metadata=meta_row, accession="rf8320d", position=12324, site_id="ggsgdg", misc=json.dumps(dict(CHROM=2)))
-    variant_row = db.insert_row(table="variant", site=site_row, name="NA001", ref="A", alt="G", misc=json.dumps(dict(called=True, phased=False)))
+    meta_row = db.insert_row(
+        table="metadata",
+        filename="myfile",
+        misc=json.dumps(dict(FORMATS="blahblah", INFOS="bloobloo")))
+    site_row = db.insert_row(
+        table="site",
+        metadata=meta_row,
+        accession="rf8320d",
+        position=12324,
+        site_id="ggsgdg",
+        misc=json.dumps(dict(CHROM=2)))
+    variant_row = db.insert_row(
+        table="variant",
+        site=site_row,
+        name="NA001",
+        ref="A",
+        alt="G",
+        misc=json.dumps(dict(called=True, phased=False)))
     print "meta", meta_row
     print "site", site_row
     print "variant", variant_row

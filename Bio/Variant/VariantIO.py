@@ -9,6 +9,7 @@ import os
 
 from PyvcfIO import PyvcfIterator
 
+
 class VariantIO(object):
 
     def __init__(self, filename, filetype=None, compressed=False):
@@ -26,10 +27,10 @@ class VariantIO(object):
 
         #print self.compressed, self.filename, self.filetype
 
-        parsers = dict(
-            vcf = PyvcfIterator,
-            #gvf = GvfIterator,
-        )
+        parsers = {
+            'vcf': PyvcfIterator,
+            #'gvf': GvfIterator,
+        }
 
         try:
             parse_func = parsers[self.filetype]
@@ -65,7 +66,3 @@ if __name__ == "__main__":
 
     filename = sys.argv[1]
     test = VariantIO(filename)
-    
- 
-
-

@@ -7,14 +7,15 @@ except ImportError:
 
 from VariantDB import VariantSqlite
 
+
 class Pyvcf2db(object):
-    def __init__(self, database, filename, compressed=False, 
+    def __init__(self, database, filename, compressed=False,
                  prepend_chr=False):
         self.db = database
-        
+
         # XXX When should this handle be closed?
         handle = open(filename, "rb")
-        self._parser = Reader(fsock=handle, compressed=compressed, 
+        self._parser = Reader(fsock=handle, compressed=compressed,
                              prepend_chr=prepend_chr)
 
         # Store info in db
@@ -24,16 +25,16 @@ class Pyvcf2db(object):
             infos = self._parser.infos,
             metadata = self._parser.metadata,
         ))
-        self.metadata = db.insert_row(table='metadata', 
+        self.metadata = db.insert_row(table='metadata',
                                   filename=filename, misc=file_data)
 
     def next(self):
         row = self._parser.next()
         site_dict = dict(
             metadata = self.metadata,
-            accession = None, # I think this is ##reference
-            position = row.POS, 
-            site_id = row.ID, 
+            accession = None,  # I think this is ##reference
+            position = row.POS,
+            site_id = row.ID,
             chrom = row.CHROM,
             filter = row.FILTER,
             qual = row.QUAL,
@@ -41,7 +42,7 @@ class Pyvcf2db(object):
         site_dict['misc'] = json.dumps(dict(
             info = row.INFO,
             sample_indexes = row._sample_indexes,
-            alleles = json.dumps(row.alleles), # etc
+            alleles = json.dumps(row.alleles),  # etc
         ))
         site_id = db.insert_row(table='site', **site_dict)
 
@@ -73,4 +74,3 @@ if __name__ == "__main__":
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename)
     parser.next()
-
