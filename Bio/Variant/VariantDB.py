@@ -57,60 +57,12 @@ class VariantDB(object):
         raise NotImplementedError
 
     @abstractmethod
-    def metadata_insert(self, filename, misc):
+    def insert_row(self, table, **kwargs):
         """
-        Insert a row into metadata. Expected schema:
-        metadata (
-            id INTEGER PRIMARY KEY,
-            filename TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT
-        )
-        Set create_date to current datetime.
+        Insert a row into the table. 
+        Set create_date and update_date to current datetime.
         Return id.
    
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def site_insert(self, metadata, accession, position, site_id, misc):
-        """
-        Insert a row into site. Expected schema:
-        site (
-            id INTEGER PRIMARY KEY,
-            metadata INTEGER,
-            accession TEXT,
-            position INTEGER,
-            site_id TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT
-            FOREIGN KEY(metadata) REFERENCES metadata(id),
-        )
-        Set create_date and update_date to current datetime.
-        Return id.
-
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def variant_insert(self, site, name, ref, alt, misc):
-        """
-        Insert a row into variant. Expected schema:
-        variant (
-            id INTEGER PRIMARY KEY,
-            site INTEGER,
-            name TEXT,
-            ref TEXT,
-            alt TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT
-            FOREIGN KEY(site) REFERENCES site(id),
-        )
-        Set create_date and update_date to current datetime.
- 
         """
         raise NotImplementedError
 
@@ -131,39 +83,42 @@ class VariantSqlite(VariantDB):
             dbname = "variant.db"
         self.conn = sqlite3.connect(dbname)
         self.cursor = self.conn.cursor()
-        schema = dict()
-        schema['metadata'] = """(
-            id INTEGER PRIMARY KEY,
-            filename TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT
-        )"""
-        schema['site'] = """(
-            id INTEGER PRIMARY KEY,
-            metadata INTEGER,
-            accession TEXT,
-            position INTEGER,
-            site_id TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT,
-            FOREIGN KEY (metadata) REFERENCES metadata(id)
-        )"""
-        schema['variant'] = """(
-            id INTEGER PRIMARY KEY,
-            site INTEGER,
-            name TEXT,
-            ref TEXT,
-            alt TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT,
-            FOREIGN KEY (site) REFERENCES site(id)
-        )"""
+        self.schema = dict(
+            metadata = [
+                ('id', 'INTEGER PRIMARY KEY'),
+                ('filename', 'TEXT'),
+                ('misc', 'TEXT'),
+                ('create_date', 'TEXT'),
+                ('update_date', 'TEXT'),
+            ],
+            site = [
+                ('id', 'INTEGER PRIMARY KEY'),
+                ('metadata', 'INTEGER'),
+                ('accession', 'TEXT'),
+                ('position', 'INTEGER'),
+                ('site_id', 'TEXT'),
+                ('misc', 'TEXT'),
+                ('create_date', 'TEXT'),
+                ('update_date', 'TEXT'),
+                ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
+            ],
+            variant = [
+                ('id', 'INTEGER PRIMARY KEY'),
+                ('site', 'INTEGER'),
+                ('name', 'TEXT'),
+                ('ref', 'TEXT'),
+                ('alt', 'TEXT'),
+                ('misc', 'TEXT'),
+                ('create_date', 'TEXT'),
+                ('update_date', 'TEXT'),
+                ('FOREIGN KEY', '(site) REFERENCES site(id)'),
+            ],
+        )
 
-        for k, v in schema.iteritems():
-            create_stmt = "CREATE TABLE IF NOT EXISTS %s %s" % (k, v)
+        for name, col_list in self.schema.iteritems():
+            cols = ", ".join((" ".join(item) for item in col_list))
+            create_stmt = "CREATE TABLE IF NOT EXISTS %s (%s)" % (
+                            name, cols)
             self.cursor.execute(create_stmt)
         self.conn.commit()
 
@@ -174,53 +129,14 @@ class VariantSqlite(VariantDB):
         except AttributeError:
             pass
 
-    def metadata_insert(self, filename, misc):
-        """
-        Insert a row into metadata. Return id of inserted row.
-        misc is expected to be a dict.
-        All other parameters must be string or int. 
-
-        """
-        insert_string = "INSERT INTO metadata VALUES (:id, :filename, \
-                        :misc, :create_date, :update_date)"
+    def insert_row(self, table, **insert_dict):
+        """Insert a row into a table. Return id of inserted row."""
+        values = ", ".join(["".join([":", x[0]]) for x in self.schema[table] if x[0] != "FOREIGN KEY"])
+        insert_string = "INSERT INTO %s VALUES (%s)" % (table, values)
         time = self._time()
-        insert_dict = dict(id=None, filename=filename, 
-            misc=json.dumps(misc), create_date=time, update_date=time)
-        self.cursor.execute(insert_string, insert_dict)
-        self.conn.commit()
-        return self.cursor.lastrowid
-
-    def site_insert(self, metadata, accession, position, site_id, misc):
-        """
-        Insert a row into site. Return id of inserted row.
-        misc is expected to be a dict.
-        All other parameters must be string or int. 
-
-        """
-        insert_string = "INSERT INTO site VALUES (\
-            :id, :metadata, :accession, :position, :site_id, :misc, \
-            :create_date, :update_date)"
-        time = self._time()
-        insert_dict = dict(id=None, metadata=metadata, 
-            accession=accession, position=position, site_id=site_id,
-            misc=json.dumps(misc), create_date=time, update_date=time)
-        self.cursor.execute(insert_string, insert_dict)
-        self.conn.commit()
-        return self.cursor.lastrowid
-
-    def variant_insert(self, site, name, ref, alt, misc):
-        """
-        Insert a row into variant. Return id of inserted row.
-        misc is expected to be a dict.
-        All other parameters must be string or int. 
-
-        """
-        insert_string = "INSERT INTO variant VALUES (:id, :site, \
-            :name, :ref, :alt, :misc, :create_date, :update_date)"
-        time = self._time()
-        insert_dict = dict(id=None, site=site, name=name, 
-            ref=ref, alt=alt, misc=json.dumps(misc), 
-            create_date=time, update_date=time)
+        insert_dict['id'] = None
+        insert_dict['create_date'] = time
+        insert_dict['update_date'] = time
         self.cursor.execute(insert_string, insert_dict)
         self.conn.commit()
         return self.cursor.lastrowid
@@ -234,9 +150,9 @@ class VariantSqlite(VariantDB):
     
 if __name__ == "__main__":
     db = VariantSqlite("test.db")
-    meta_row = db.metadata_insert(filename="myfile", misc=dict(FORMATS="blahblah", INFOS="bloobloo"))
-    site_row = db.site_insert(metadata=meta_row, accession="rf8320d", position=12324, site_id="ggsgdg", misc=dict(CHROM=2))
-    variant_row = db.variant_insert(site=site_row, name="NA001", ref="A", alt="G", misc=dict(called=True, phased=False))
+    meta_row = db.insert_row(table="metadata", filename="myfile", misc=json.dumps(dict(FORMATS="blahblah", INFOS="bloobloo")))
+    site_row = db.insert_row(table="site", metadata=meta_row, accession="rf8320d", position=12324, site_id="ggsgdg", misc=json.dumps(dict(CHROM=2)))
+    variant_row = db.insert_row(table="variant", site=site_row, name="NA001", ref="A", alt="G", misc=json.dumps(dict(called=True, phased=False)))
     print "meta", meta_row
     print "site", site_row
     print "variant", variant_row
