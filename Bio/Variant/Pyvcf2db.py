@@ -18,14 +18,14 @@ class Pyvcf2db(object):
                              prepend_chr=prepend_chr)
 
         # Store info in db
-        file_data = dict(
+        file_data = json.dumps(dict(
             filters = self._parser.filters,
             formats = self._parser.formats,
             infos = self._parser.infos,
             metadata = self._parser.metadata,
-        )
-        self.metadata = db.metadata_insert(filename=filename, 
-                                           misc=file_data)
+        ))
+        self.metadata = db.insert_row(table='metadata', 
+                                  filename=filename, misc=file_data)
 
     def next(self):
         row = self._parser.next()
@@ -35,15 +35,15 @@ class Pyvcf2db(object):
             position = row.POS, 
             site_id = row.ID, 
         )
-        site_dict['misc'] = dict(
+        site_dict['misc'] = json.dumps(dict(
             chrom = row.CHROM,
             info = row.INFO,
             filter = row.FILTER,
             qual = row.QUAL,
             sample_indexes = row._sample_indexes,
             alleles = json.dumps(row.alleles), # etc
-        )
-        site_id = db.site_insert(**site_dict)
+        ))
+        site_id = db.insert_row(table='site', **site_dict)
 
         for samp in row.samples:
             variant_dict = dict(
@@ -52,16 +52,16 @@ class Pyvcf2db(object):
                 ref = row.REF,  # XXX is this correct?
                 alt = samp.gt_bases,  # ditto
             )
-            variant_dict['misc'] = dict(
+            variant_dict['misc'] = json.dumps(dict(
                 type = samp.gt_type,
                 called = samp.called,
                 data = samp.data,
                 is_get = samp.is_het,
                 is_variant = samp.is_variant,
                 phased = samp.phased
-            )
+            ))
 
-            db.variant_insert(**variant_dict)
+            db.insert_row(table='variant', **variant_dict)
 
 
 if __name__ == "__main__":
