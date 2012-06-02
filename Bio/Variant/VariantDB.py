@@ -15,41 +15,44 @@ class VariantDB(object):
 
     @abstractmethod
     def __init__(self, dbname=None):
-        """
-        Connect to the database and create the tables
-        Expected tables:
-        metadata (
-            id INTEGER PRIMARY KEY,
-            filename TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT
-        )
-        site (
-            id INTEGER PRIMARY KEY,
-            metadata INTEGER,
-            accession TEXT,
-            position INTEGER,
-            site_id TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT,
-            FOREIGN KEY(metadata) REFERENCES metadata(id),
-        )
-        variant (
-            id INTEGER PRIMARY KEY,
-            site INTEGER,
-            name TEXT,
-            ref TEXT,
-            alt TEXT,
-            misc TEXT,
-            create_date TEXT,
-            update_date TEXT
-            FOREIGN KEY(site) REFERENCES site(id),
-        )
-
-        """
+        """Connect to the database and create the tables."""
         raise NotImplementedError
+
+    # Expected schema for predefined tables
+    schema = {
+        'metadata': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('filename', 'TEXT'),
+            ('misc', 'TEXT'),
+            ('create_date', 'TEXT'),
+            ('update_date', 'TEXT'),
+        ],
+        'site': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('metadata', 'INTEGER'),
+            ('accession', 'TEXT'),
+            ('position', 'INTEGER'),
+            ('site_id', 'TEXT'),
+            ('chrom', 'TEXT'),
+            ('filter', 'TEXT'),
+            ('qual', 'TEXT'),
+            ('misc', 'TEXT'),
+            ('create_date', 'TEXT'),
+            ('update_date', 'TEXT'),
+            ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
+        ],
+        'variant': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('site', 'INTEGER'),
+            ('name', 'TEXT'),
+            ('ref', 'TEXT'),
+            ('alt', 'TEXT'),
+            ('misc', 'TEXT'),
+            ('create_date', 'TEXT'),
+            ('update_date', 'TEXT'),
+            ('FOREIGN KEY', '(site) REFERENCES site(id)'),
+        ],
+    }
 
     @abstractmethod
     def __del__(self):
@@ -83,40 +86,6 @@ class VariantSqlite(VariantDB):
             dbname = "variant.db"
         self.conn = sqlite3.connect(dbname)
         self.cursor = self.conn.cursor()
-        self.schema = dict(
-            metadata=[
-                ('id', 'INTEGER PRIMARY KEY'),
-                ('filename', 'TEXT'),
-                ('misc', 'TEXT'),
-                ('create_date', 'TEXT'),
-                ('update_date', 'TEXT'),
-            ],
-            site=[
-                ('id', 'INTEGER PRIMARY KEY'),
-                ('metadata', 'INTEGER'),
-                ('accession', 'TEXT'),
-                ('position', 'INTEGER'),
-                ('site_id', 'TEXT'),
-                ('chrom', 'TEXT'),
-                ('filter', 'TEXT'),
-                ('qual', 'TEXT'),
-                ('misc', 'TEXT'),
-                ('create_date', 'TEXT'),
-                ('update_date', 'TEXT'),
-                ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
-            ],
-            variant=[
-                ('id', 'INTEGER PRIMARY KEY'),
-                ('site', 'INTEGER'),
-                ('name', 'TEXT'),
-                ('ref', 'TEXT'),
-                ('alt', 'TEXT'),
-                ('misc', 'TEXT'),
-                ('create_date', 'TEXT'),
-                ('update_date', 'TEXT'),
-                ('FOREIGN KEY', '(site) REFERENCES site(id)'),
-            ],
-        )
 
         for name, col_list in self.schema.iteritems():
             cols = ", ".join((" ".join(item) for item in col_list))
@@ -136,7 +105,8 @@ class VariantSqlite(VariantDB):
         """Insert a row into a table. Return id of inserted row."""
         values = ", ".join(  # join items by comma
             ("".join((":", x[0]))  # prepend keys with colon
-            for x in self.schema[table] if x[0] != "FOREIGN KEY"))
+            for x in self.schema[table] if x[0] != "FOREIGN KEY")
+        )
         insert_string = "INSERT INTO %s VALUES (%s)" % (table, values)
         time = self._time()
         insert_dict['id'] = None
@@ -165,7 +135,10 @@ if __name__ == "__main__":
         accession="rf8320d",
         position=12324,
         site_id="ggsgdg",
-        misc=json.dumps(dict(CHROM=2)))
+        chrom=2,
+        filter='q10',
+        qual='22',
+        misc=json.dumps(dict(INFO='something interesting')))
     variant_row = db.insert_row(
         table="variant",
         site=site_row,
