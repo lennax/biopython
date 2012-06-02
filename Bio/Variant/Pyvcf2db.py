@@ -34,12 +34,12 @@ class Pyvcf2db(object):
             accession = None, # I think this is ##reference
             position = row.POS, 
             site_id = row.ID, 
-        )
-        site_dict['misc'] = json.dumps(dict(
             chrom = row.CHROM,
-            info = row.INFO,
             filter = row.FILTER,
             qual = row.QUAL,
+        )
+        site_dict['misc'] = json.dumps(dict(
+            info = row.INFO,
             sample_indexes = row._sample_indexes,
             alleles = json.dumps(row.alleles), # etc
         ))
