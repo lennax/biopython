@@ -29,7 +29,13 @@ class Pyvcf2db(object):
                                   filename=filename, misc=file_data)
 
     def next(self):
-        row = self._parser.next()
+        self._insert_row(self._parser.next())
+
+    def parse_all(self):
+        for row in self._parser:
+            self._insert_row(row)
+
+    def _insert_row(self, row):
         site_dict = dict(
             metadata = self.metadata,
             accession = None,  # I think this is ##reference
@@ -73,4 +79,5 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename)
-    parser.next()
+    #parser.next()
+    parser.parse_all()
