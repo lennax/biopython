@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(biopython-lennax NONE)
 
+set(CTEST_PROJECT_NAME ${PROJECT_NAME})
+
 set(Python_ADDITIONAL_VERSIONS 2.6)
 find_package(PythonInterp 2.6 REQUIRED)
 enable_testing()
