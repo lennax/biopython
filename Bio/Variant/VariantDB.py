@@ -101,8 +101,14 @@ class VariantSqlite(VariantDB):
         except AttributeError:
             pass
 
+    def insert_commit(self, **kwargs):
+        """Insert a row into a table, commit, and return id"""
+        self.insert_row(**kwargs)
+        self.conn.commit()
+        return self.cursor.lastrowid
+
     def insert_row(self, table, **insert_dict):
-        """Insert a row into a table. Return id of inserted row."""
+        """Insert a row into a table."""
         values = ", ".join(  # join items by comma
             ("".join((":", x[0]))  # prepend keys with colon
             for x in self.schema[table] if x[0] != "FOREIGN KEY")
@@ -113,8 +119,6 @@ class VariantSqlite(VariantDB):
         insert_dict['create_date'] = time
         insert_dict['update_date'] = time
         self.cursor.execute(insert_string, insert_dict)
-        self.conn.commit()
-        return self.cursor.lastrowid
 
     def _time(self):
         "Return current time as YYYY-mm-DD HH:MM:SS"

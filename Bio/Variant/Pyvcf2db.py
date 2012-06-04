@@ -25,15 +25,17 @@ class Pyvcf2db(object):
             infos = self._parser.infos,
             metadata = self._parser.metadata,
         ))
-        self.metadata = db.insert_row(table='metadata',
+        self.metadata = db.insert_commit(table='metadata',
                                   filename=filename, misc=file_data)
 
     def next(self):
         self._insert_row(self._parser.next())
+        db.conn.commit()
 
     def parse_all(self):
         for row in self._parser:
             self._insert_row(row)
+        db.conn.commit()
 
     def _insert_row(self, row):
         site_dict = dict(
@@ -50,7 +52,7 @@ class Pyvcf2db(object):
             sample_indexes = row._sample_indexes,
             alleles = json.dumps(row.alleles),  # etc
         ))
-        site_id = db.insert_row(table='site', **site_dict)
+        site_id = db.insert_commit(table='site', **site_dict)
 
         for samp in row.samples:
             variant_dict = dict(
@@ -73,11 +75,16 @@ class Pyvcf2db(object):
 
 if __name__ == "__main__":
     import sys
+    import os
     if len(sys.argv) != 2:
         raise SystemExit("Usage: python script.py test_file")
 
     filename = sys.argv[1]
+    compressed = False
+    if os.path.splitext(filename)[1] == ".gz":
+        compressed = True
     db = VariantSqlite("vcftest.db")
-    parser = Pyvcf2db(database=db, filename=filename)
+    parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
     #parser.next()
     parser.parse_all()
+    
