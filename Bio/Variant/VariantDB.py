@@ -15,44 +15,62 @@ class VariantDB(object):
 
     @abstractmethod
     def __init__(self, dbname=None):
-        """Connect to the database and create the tables."""
-        raise NotImplementedError
+        """
+        Connect to the database and create the tables.
+        NOTE: call this method in the child implementation
+        to initialize schema values.
+        """
+        # Expected schema for predefined tables
+        self.schema = {
+            'metadata': [
+                ('id', 'INTEGER PRIMARY KEY'),
+                ('filename', 'TEXT'),
+                ('misc', 'TEXT'),
+                ('create_date', 'TEXT'),
+                ('update_date', 'TEXT'),
+            ],
+            'site': [
+                ('id', 'INTEGER PRIMARY KEY'),
+                ('metadata', 'INTEGER'),
+                ('accession', 'TEXT'),
+                ('position', 'INTEGER'),
+                ('site_id', 'TEXT'),
+                ('chrom', 'TEXT'),
+                ('filter', 'TEXT'),
+                ('qual', 'TEXT'),
+                ('misc', 'TEXT'),
+                ('create_date', 'TEXT'),
+                ('update_date', 'TEXT'),
+                ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
+            ],
+            'variant': [
+                ('id', 'INTEGER PRIMARY KEY'),
+                ('site', 'INTEGER'),
+                ('name', 'TEXT'),
+                ('ref', 'TEXT'),
+                ('alt', 'TEXT'),
+                ('misc', 'TEXT'),
+                ('create_date', 'TEXT'),
+                ('update_date', 'TEXT'),
+                ('FOREIGN KEY', '(site) REFERENCES site(id)'),
+            ],
+        }
 
-    # Expected schema for predefined tables
-    schema = {
-        'metadata': [
-            ('id', 'INTEGER PRIMARY KEY'),
-            ('filename', 'TEXT'),
-            ('misc', 'TEXT'),
-            ('create_date', 'TEXT'),
-            ('update_date', 'TEXT'),
-        ],
-        'site': [
-            ('id', 'INTEGER PRIMARY KEY'),
-            ('metadata', 'INTEGER'),
-            ('accession', 'TEXT'),
-            ('position', 'INTEGER'),
-            ('site_id', 'TEXT'),
-            ('chrom', 'TEXT'),
-            ('filter', 'TEXT'),
-            ('qual', 'TEXT'),
-            ('misc', 'TEXT'),
-            ('create_date', 'TEXT'),
-            ('update_date', 'TEXT'),
-            ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
-        ],
-        'variant': [
-            ('id', 'INTEGER PRIMARY KEY'),
-            ('site', 'INTEGER'),
-            ('name', 'TEXT'),
-            ('ref', 'TEXT'),
-            ('alt', 'TEXT'),
-            ('misc', 'TEXT'),
-            ('create_date', 'TEXT'),
-            ('update_date', 'TEXT'),
-            ('FOREIGN KEY', '(site) REFERENCES site(id)'),
-        ],
-    }
+        self.create_stmt = dict()
+        self.ins_stmt = dict()
+        for table, col_list in self.schema.iteritems():
+            self.create_stmt[table] = "CREATE TABLE IF NOT EXISTS \
+            %s (%s)" % (
+                table,
+                ", ".join((" ".join(item) for item in col_list))
+            )
+
+            self.ins_stmt[table] = "INSERT INTO %s VALUES (%s)" % (
+                table,
+                ", ".join(("".join((":", x[0]))
+                          for x in col_list if x[0] != "FOREIGN KEY")
+                )
+            )
 
     @abstractmethod
     def __del__(self):
@@ -82,16 +100,13 @@ class VariantSqlite(VariantDB):
 
     def __init__(self, dbname=None):
         """Connect to the database and create the tables."""
+        VariantDB.__init__(self, dbname=dbname)
         if dbname is None:
             dbname = "variant.db"
         self.conn = sqlite3.connect(dbname)
         self.cursor = self.conn.cursor()
-
-        for name, col_list in self.schema.iteritems():
-            cols = ", ".join((" ".join(item) for item in col_list))
-            create_stmt = "CREATE TABLE IF NOT EXISTS %s (%s)" % (
-                            name, cols)
-            self.cursor.execute(create_stmt)
+        for stmt in self.create_stmt.values():
+            self.cursor.execute(stmt)
         self.conn.commit()
 
     def __del__(self):
@@ -109,11 +124,7 @@ class VariantSqlite(VariantDB):
 
     def insert_row(self, table, **insert_dict):
         """Insert a row into a table."""
-        values = ", ".join(  # join items by comma
-            ("".join((":", x[0]))  # prepend keys with colon
-            for x in self.schema[table] if x[0] != "FOREIGN KEY")
-        )
-        insert_string = "INSERT INTO %s VALUES (%s)" % (table, values)
+        insert_string = self.ins_stmt[table]
         time = self._time()
         insert_dict['id'] = None
         insert_dict['create_date'] = time
@@ -129,11 +140,11 @@ class VariantSqlite(VariantDB):
 
 if __name__ == "__main__":
     db = VariantSqlite("test.db")
-    meta_row = db.insert_row(
+    meta_row = db.insert_commit(
         table="metadata",
         filename="myfile",
         misc=json.dumps(dict(FORMATS="blahblah", INFOS="bloobloo")))
-    site_row = db.insert_row(
+    site_row = db.insert_commit(
         table="site",
         metadata=meta_row,
         accession="rf8320d",
@@ -150,6 +161,7 @@ if __name__ == "__main__":
         ref="A",
         alt="G",
         misc=json.dumps(dict(called=True, phased=False)))
+    db.conn.commit()
     print "meta", meta_row
     print "site", site_row
     print "variant", variant_row
