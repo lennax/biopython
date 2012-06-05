@@ -59,18 +59,18 @@ class VariantDB(object):
         self.create_stmt = dict()
         self.ins_stmt = dict()
         for table, col_list in self.schema.iteritems():
-            self.create_stmt[table] = "CREATE TABLE IF NOT EXISTS \
-            %s (%s)" % (
+            setattr(self, "create_%s" % table, "CREATE TABLE \
+            IF NOT EXISTS %s (%s)" % (
                 table,
                 ", ".join((" ".join(item) for item in col_list))
-            )
+            ))
 
-            self.ins_stmt[table] = "INSERT INTO %s VALUES (%s)" % (
+            setattr(self, "ins_%s" % table, "INSERT INTO %s VALUES (%s)" % (
                 table,
                 ", ".join(("".join((":", x[0]))
                           for x in col_list if x[0] != "FOREIGN KEY")
                 )
-            )
+            ))
 
     @abstractmethod
     def __del__(self):
@@ -105,7 +105,8 @@ class VariantSqlite(VariantDB):
             dbname = "variant.db"
         self.conn = sqlite3.connect(dbname)
         self.cursor = self.conn.cursor()
-        for stmt in self.create_stmt.values():
+        for table in self.schema.keys():
+            stmt = getattr(self, "create_%s" % table)
             self.cursor.execute(stmt)
         self.conn.commit()
 
@@ -124,7 +125,7 @@ class VariantSqlite(VariantDB):
 
     def insert_row(self, table, **insert_dict):
         """Insert a row into a table."""
-        insert_string = self.ins_stmt[table]
+        insert_string = getattr(self, "ins_%s" % table)
         time = self._time()
         insert_dict['id'] = None
         insert_dict['create_date'] = time
