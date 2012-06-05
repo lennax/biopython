@@ -1,9 +1,9 @@
 import json
 
-#try:
-    #from cyvcf import Reader, Writer
-#except ImportError:
-from vcf import Reader, Writer
+try:
+    from cyvcf import Reader, Writer
+except ImportError:
+    from vcf import Reader, Writer
 
 from VariantDB import VariantSqlite
 
