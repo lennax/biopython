@@ -49,12 +49,14 @@ class Pyvcf2db(object):
         )
         site_dict['misc'] = json.dumps(dict(
             info = row.INFO,
-            sample_indexes = row._sample_indexes,
+            #sample_indexes = row._sample_indexes,  # FIXME cyvcf error
             alleles = json.dumps(row.alleles),  # etc
         ))
         site_id = db.insert_commit(table='site', **site_dict)
 
         for samp in row.samples:
+            if samp.called == False:
+                return
             variant_dict = dict(
                 site = site_id,
                 name = samp.sample,
