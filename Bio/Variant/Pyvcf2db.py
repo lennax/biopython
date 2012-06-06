@@ -54,6 +54,7 @@ class Pyvcf2db(object):
         ))
         site_id = db.insert_commit(table='site', **site_dict)
 
+        samples = []
         for samp in row.samples:
             if samp.called == False:
                 continue
@@ -72,7 +73,9 @@ class Pyvcf2db(object):
                 phased = samp.phased
             ))
 
-            db.insert_row(table='variant', **variant_dict)
+            samples.append(variant_dict)
+
+        db.insert_many(table='variant', row_iter=samples)
 
 
 if __name__ == "__main__":

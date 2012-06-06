@@ -89,6 +89,11 @@ class VariantDB(object):
 
     @abstractmethod
     def query(self, query):
+        """
+        Run query on DB.
+        As DB will most likely be local, security is the user's concern. 
+
+        """
         pass
 
 
@@ -131,12 +136,23 @@ class VariantSqlite(VariantDB):
         insert_dict['update_date'] = time
         self.cursor.execute(insert_string, insert_dict)
 
+    def insert_many(self, table, row_iter):
+        """Insert multiple rows; provide an iterable of dicts"""
+        insert_string = self.ins_stmt[table]
+        time = self._time()
+        for insert_dict in row_iter:
+            insert_dict['id'] = None
+            insert_dict['create_date'] = time
+            insert_dict['update_date'] = time
+        self.cursor.executemany(insert_string, row_iter)
+
     def _time(self):
         "Return current time as YYYY-mm-DD HH:MM:SS"
         return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def query(self, query):
-        pass
+        self.cursor.execute(query)
+
 
 if __name__ == "__main__":
     db = VariantSqlite("test.db")
