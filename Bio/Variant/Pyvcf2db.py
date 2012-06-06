@@ -56,7 +56,7 @@ class Pyvcf2db(object):
 
         for samp in row.samples:
             if samp.called == False:
-                return
+                continue
             variant_dict = dict(
                 site = site_id,
                 name = samp.sample,
