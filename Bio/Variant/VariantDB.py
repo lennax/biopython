@@ -19,43 +19,8 @@ class VariantDB(object):
         Connect to the database and create the tables.
         NOTE: call this method in the child implementation
         to initialize schema values.
-        """
-        # Expected schema for predefined tables
-        self.schema = {
-            'metadata': [
-                ('id', 'INTEGER PRIMARY KEY'),
-                ('filename', 'TEXT'),
-                ('misc', 'TEXT'),
-                ('create_date', 'TEXT'),
-                ('update_date', 'TEXT'),
-            ],
-            'site': [
-                ('id', 'INTEGER PRIMARY KEY'),
-                ('metadata', 'INTEGER'),
-                ('accession', 'TEXT'),
-                ('position', 'INTEGER'),
-                ('site_id', 'TEXT'),
-                ('chrom', 'TEXT'),
-                ('filter', 'TEXT'),
-                ('qual', 'TEXT'),
-                ('misc', 'TEXT'),
-                ('create_date', 'TEXT'),
-                ('update_date', 'TEXT'),
-                ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
-            ],
-            'variant': [
-                ('id', 'INTEGER PRIMARY KEY'),
-                ('site', 'INTEGER'),
-                ('name', 'TEXT'),
-                ('ref', 'TEXT'),
-                ('alt', 'TEXT'),
-                ('misc', 'TEXT'),
-                ('create_date', 'TEXT'),
-                ('update_date', 'TEXT'),
-                ('FOREIGN KEY', '(site) REFERENCES site(id)'),
-            ],
-        }
 
+        """
         self.create_stmt = dict()
         self.ins_stmt = dict()
         for table, col_list in self.schema.iteritems():
@@ -65,12 +30,49 @@ class VariantDB(object):
                 ", ".join((" ".join(item) for item in col_list))
             )
 
-            self.ins_stmt[table] = "INSERT INTO %s VALUES (%s)" % (
+            ins_iter = [x[0] for x in col_list if x[0] not in (
+                "id", "update_date", "FOREIGN KEY")]
+            self.ins_stmt[table] = "INSERT INTO %s (%s) VALUES (%s)" % (
                 table,
-                ", ".join(("".join((":", x[0]))
-                          for x in col_list if x[0] != "FOREIGN KEY")
-                )
+                ", ".join(ins_iter),
+                ", ".join(("".join((":", x)) for x in ins_iter))
             )
+
+    # schema definitions
+    schema = {
+        'metadata': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('filename', 'TEXT'),
+            ('misc', 'TEXT'),
+            ('create_date', 'TIMESTAMP NOT NULL'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+        ],
+        'site': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('metadata', 'INTEGER'),
+            ('accession', 'TEXT'),
+            ('position', 'INTEGER'),
+            ('site_id', 'TEXT'),
+            ('chrom', 'TEXT'),
+            ('filter', 'TEXT'),
+            ('qual', 'TEXT'),
+            ('misc', 'TEXT'),
+            ('create_date', 'TIMESTAMP NOT NULL'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+            ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
+        ],
+        'variant': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('site', 'INTEGER'),
+            ('name', 'TEXT'),
+            ('ref', 'TEXT'),
+            ('alt', 'TEXT'),
+            ('misc', 'TEXT'),
+            ('create_date', 'TIMESTAMP'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+            ('FOREIGN KEY', '(site) REFERENCES site(id)'),
+        ],
+    }
 
     @abstractmethod
     def __del__(self):
@@ -94,7 +96,7 @@ class VariantDB(object):
         As DB will most likely be local, security is the user's concern. 
 
         """
-        pass
+        raise NotImplementedError
 
 
 class VariantSqlite(VariantDB):
@@ -130,25 +132,15 @@ class VariantSqlite(VariantDB):
     def insert_row(self, table, **insert_dict):
         """Insert a row into a table."""
         insert_string = self.ins_stmt[table]
-        time = self._time()
-        insert_dict['id'] = None
-        insert_dict['create_date'] = time
-        insert_dict['update_date'] = time
+        insert_dict['create_date'] = datetime.now()
         self.cursor.execute(insert_string, insert_dict)
 
     def insert_many(self, table, row_iter):
         """Insert multiple rows; provide an iterable of dicts"""
         insert_string = self.ins_stmt[table]
-        time = self._time()
         for insert_dict in row_iter:
-            insert_dict['id'] = None
-            insert_dict['create_date'] = time
-            insert_dict['update_date'] = time
+            insert_dict['create_date'] = datetime.now()
         self.cursor.executemany(insert_string, row_iter)
-
-    def _time(self):
-        "Return current time as YYYY-mm-DD HH:MM:SS"
-        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def query(self, query):
         self.cursor.execute(query)
