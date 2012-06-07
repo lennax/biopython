@@ -90,6 +90,8 @@ class VariantDB(object):
         'key': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('key', 'TEXT'),
+            ('number', 'TEXT'),
+            ('type', 'TEXT'),
             ('description', 'TEXT'),
         ],
         'site_info': [
