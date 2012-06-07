@@ -18,8 +18,16 @@ class Pyvcf2db(object):
         self._parser = Reader(fsock=handle, compressed=compressed,
                              prepend_chr=prepend_chr)
 
-        #for info in self._parser.infos.itervalues():
-            #print info.id, info.num, info.type, info.desc
+        site_cols = [col[0] for col in self.db.schema['site']]
+        print "site info to add"
+        for info in self._parser.infos.itervalues():
+            if info.id not in site_cols:
+                print info.id, info.num, info.type, info.desc
+        variant_cols = [col[0] for col in self.db.schema['variant']]
+        print "variant info to add"
+        for fmt in self._parser.formats.itervalues():
+            if fmt.id not in variant_cols:
+                print fmt.id, fmt.num, fmt.type, fmt.desc
         # Store info in db
         file_data = json.dumps(dict(
             filters = self._parser.filters,
@@ -111,5 +119,5 @@ if __name__ == "__main__":
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
     #parser.next()
-    parser.parse_all()
+    #parser.parse_all()
     
