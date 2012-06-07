@@ -18,6 +18,8 @@ class Pyvcf2db(object):
         self._parser = Reader(fsock=handle, compressed=compressed,
                              prepend_chr=prepend_chr)
 
+        #for info in self._parser.infos.itervalues():
+            #print info.id, info.num, info.type, info.desc
         # Store info in db
         file_data = json.dumps(dict(
             filters = self._parser.filters,
@@ -40,38 +42,56 @@ class Pyvcf2db(object):
     def _insert_row(self, row):
         site_dict = dict(
             metadata = self.metadata,
-            accession = None,  # I think this is ##reference
-            position = row.POS,
-            site_id = row.ID,
             chrom = row.CHROM,
+            position = row.POS,
+            accession = None,  # I think this is ##reference
+            site_id = row.ID,
+            ref = row.REF,
             filter = row.FILTER,
             qual = row.QUAL,
+            NS = row.INFO.get('NS'),
+            DP = row.INFO.get('DP'),
+            AA = row.INFO.get('AA'),
+            DB = row.INFO.get('DB'),
+            H2 = row.INFO.get('H2'),
         )
-        site_dict['misc'] = json.dumps(dict(
-            info = row.INFO,
-            #sample_indexes = row._sample_indexes,  # FIXME cyvcf error
-            alleles = json.dumps(row.alleles),  # etc
-        ))
         site_id = db.insert_commit(table='site', **site_dict)
+        alleles = []
+        for num, allele in enumerate(row.ALT):
+            AF_list = row.INFO.get('AF')
+            try:
+                AF = AF_list[num]
+            except TypeError:
+                AF = None
+            alt_dict = dict(
+                alt_id = num+1,
+                site = site_id,
+                alt = allele,
+                AF = AF,
+            )
+            alleles.append(alt_dict)
+
+        db.insert_many(table='alt', row_iter=alleles)
 
         samples = []
         for samp in row.samples:
             if samp.called == False:
                 continue
+            HQ = samp.data.get('HQ')
+            try:
+                HQ1, HQ2 = HQ
+            except TypeError:
+                HQ1 = HQ2 = None
             variant_dict = dict(
                 site = site_id,
                 name = samp.sample,
-                ref = row.REF,  # XXX is this correct?
-                alt = samp.gt_bases,  # ditto
+                GT = samp.gt_nums,
+                GQ = samp.data.get('GQ'),
+                DP = samp.data.get('DP'),
+                HQ1 = HQ1,
+                HQ2 = HQ2,
             )
-            variant_dict['misc'] = json.dumps(dict(
-                type = samp.gt_type,
-                called = samp.called,
-                data = samp.data,
-                is_get = samp.is_het,
-                is_variant = samp.is_variant,
-                phased = samp.phased
-            ))
+            # FIXME probably also want phased, gt_bases
 
             samples.append(variant_dict)
 
