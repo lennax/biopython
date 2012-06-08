@@ -28,21 +28,20 @@ class Pyvcf2db(object):
         self.metadata = db.insert_commit(table='metadata',
                                   filename=filename, misc=file_data)
 
-        site_cols = [col[0] for col in self.db.schema['site']]
-        site_cols.append('AF')
+        self.site_cols = [col[0] for col in self.db.schema['site']]
+        self.site_cols.append('AF')
         self.extra_site = {}
         for info in self._parser.infos.itervalues():
-            if info.id not in site_cols:
+            if info.id not in self.site_cols:
                 new_id = self._add_key(info)
                 self.extra_site[info.id] = new_id
-        print self.extra_site
-        variant_cols = [col[0] for col in self.db.schema['variant']]
+
+        self.variant_cols = [col[0] for col in self.db.schema['variant']]
         self.extra_variant = {}
         for fmt in self._parser.formats.itervalues():
-            if fmt.id not in variant_cols:
+            if fmt.id not in self.variant_cols:
                 new_id = self._add_key(fmt)
                 self.extra_variant[fmt.id] = new_id
-        print self.extra_variant
 
     def next(self):
         self._insert_row(self._parser.next())
@@ -72,12 +71,29 @@ class Pyvcf2db(object):
             ref = row.REF,
             filter = row.FILTER,
             qual = row.QUAL,
-            NS = row.INFO.get('NS'),
-            DP = row.INFO.get('DP'),
-            AA = row.INFO.get('AA'),
-            DB = row.INFO.get('DB'),
-            H2 = row.INFO.get('H2'),
         )
+        for key in row.INFO.iterkeys():
+            if key in self.site_cols:
+                site_dict[key] = row.INFO[key]
+            else:
+                try:
+                    key_id = self.extra_site[key]
+                except KeyError:
+                    key_id = db.insert_commit(table='key',
+                        key=key, number=None, 
+                        type=None, description=None)
+                    # TODO add key to key table
+                # TODO add INFO pair to narrow table
+                # need site_id for this insert
+                # so have to store these somewhere and insert later
+                #db.insert_row(table='site_info', )
+
+            #NS = row.INFO.get('NS'),
+            #DP = row.INFO.get('DP'),
+            #AA = row.INFO.get('AA'),
+            #DB = row.INFO.get('DB'),
+            #H2 = row.INFO.get('H2'),
+
         site_id = db.insert_commit(table='site', **site_dict)
         alleles = []
         for num, allele in enumerate(row.ALT):
