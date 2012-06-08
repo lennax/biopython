@@ -18,16 +18,6 @@ class Pyvcf2db(object):
         self._parser = Reader(fsock=handle, compressed=compressed,
                              prepend_chr=prepend_chr)
 
-        site_cols = [col[0] for col in self.db.schema['site']]
-        print "site info to add"
-        for info in self._parser.infos.itervalues():
-            if info.id not in site_cols:
-                print info.id, info.num, info.type, info.desc
-        variant_cols = [col[0] for col in self.db.schema['variant']]
-        print "variant info to add"
-        for fmt in self._parser.formats.itervalues():
-            if fmt.id not in variant_cols:
-                print fmt.id, fmt.num, fmt.type, fmt.desc
         # Store info in db
         file_data = json.dumps(dict(
             filters = self._parser.filters,
@@ -38,6 +28,22 @@ class Pyvcf2db(object):
         self.metadata = db.insert_commit(table='metadata',
                                   filename=filename, misc=file_data)
 
+        site_cols = [col[0] for col in self.db.schema['site']]
+        site_cols.append('AF')
+        self.extra_site = {}
+        for info in self._parser.infos.itervalues():
+            if info.id not in site_cols:
+                new_id = self._add_key(info)
+                self.extra_site[info.id] = new_id
+        print self.extra_site
+        variant_cols = [col[0] for col in self.db.schema['variant']]
+        self.extra_variant = {}
+        for fmt in self._parser.formats.itervalues():
+            if fmt.id not in variant_cols:
+                new_id = self._add_key(fmt)
+                self.extra_variant[fmt.id] = new_id
+        print self.extra_variant
+
     def next(self):
         self._insert_row(self._parser.next())
         db.conn.commit()
@@ -46,6 +52,15 @@ class Pyvcf2db(object):
         for row in self._parser:
             self._insert_row(row)
         db.conn.commit()
+
+    def _add_key(self, field):
+        insert_dict = dict(
+            key = field.id,
+            number = field.num,
+            type = field.type,
+            description = field.desc,
+        )
+        return db.insert_commit(table='key', **insert_dict)
 
     def _insert_row(self, row):
         site_dict = dict(
