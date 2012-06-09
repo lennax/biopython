@@ -11,6 +11,14 @@ from VariantDB import VariantSqlite
 class Pyvcf2db(object):
     def __init__(self, database, filename, compressed=False,
                  prepend_chr=False):
+        """
+        Given a variant database object and a file:
+            - opens file
+            - inits parser
+            - stores file info in database
+            - reads file headers for unknown ##INFO or ##FORMAT
+
+        """
         self.db = database
 
         # XXX When should this handle be closed?
@@ -18,7 +26,7 @@ class Pyvcf2db(object):
         self._parser = Reader(fsock=handle, compressed=compressed,
                              prepend_chr=prepend_chr)
 
-        # Store info in db
+        # Store file info in db
         file_data = json.dumps(dict(
             filters = self._parser.filters,
             formats = self._parser.formats,
@@ -28,31 +36,44 @@ class Pyvcf2db(object):
         self.metadata = db.insert_commit(table='metadata',
                                   filename=filename, misc=file_data)
 
-        self.site_cols = [col[0] for col in self.db.schema['site']]
+        # get info tags stored in site table
+        self.site_cols = [col[0] for col in self.db.schema['site'][9:-3]]
         self.site_cols.append('AF')
         self.extra_site = {}
+        # check whether file contains unknown ##INFO fields
         for info in self._parser.infos.itervalues():
             if info.id not in self.site_cols:
+                # store unknown ##INFO fields in key table
                 new_id = self._add_key(info)
                 self.extra_site[info.id] = new_id
 
-        self.variant_cols = [col[0] for col in self.db.schema['variant']]
+        # get format tags stored in variant table
+        self.variant_cols = [col[0] for col in self.db.schema['variant'][3:-3]]
         self.extra_variant = {}
+        # check whether file contains unknown ##FORMAT fields
         for fmt in self._parser.formats.itervalues():
             if fmt.id not in self.variant_cols:
+                # store unknown ##FORMAT fields in key table
                 new_id = self._add_key(fmt)
                 self.extra_variant[fmt.id] = new_id
 
     def next(self):
-        self._insert_row(self._parser.next())
+        """Read one row into database"""
+        # call next() on parser
+        row = self._parser.next()
+        # insert row and commit
+        self._insert_row(row)
         db.conn.commit()
 
     def parse_all(self):
+        """Read entire file into database"""
+        # loop through parser and insert
         for row in self._parser:
             self._insert_row(row)
         db.conn.commit()
 
     def _add_key(self, field):
+        """Add unknown keys to key table, return id"""
         insert_dict = dict(
             key = field.id,
             number = field.num,
@@ -62,6 +83,13 @@ class Pyvcf2db(object):
         return db.insert_commit(table='key', **insert_dict)
 
     def _insert_row(self, row):
+        """
+        PRIVATE
+        Insert a row into database.
+        Note: does not commit. 
+
+        """
+        # Organize and insert site/row/record info
         site_dict = dict(
             metadata = self.metadata,
             chrom = row.CHROM,
@@ -95,8 +123,10 @@ class Pyvcf2db(object):
             #H2 = row.INFO.get('H2'),
 
         site_id = db.insert_commit(table='site', **site_dict)
+        # Organize and insert allele/alt info
         alleles = []
         for num, allele in enumerate(row.ALT):
+            # Try to get AF from row INFO
             AF_list = row.INFO.get('AF')
             try:
                 AF = AF_list[num]
@@ -112,10 +142,13 @@ class Pyvcf2db(object):
 
         db.insert_many(table='alt', row_iter=alleles)
 
+        # Organize and insert sample/genotype info
         samples = []
         for samp in row.samples:
+            # Don't insert genotype that wasn't called XXX ?
             if samp.called == False:
                 continue
+            # Divide HQ pair or set to None
             HQ = samp.data.get('HQ')
             try:
                 HQ1, HQ2 = HQ
@@ -131,7 +164,6 @@ class Pyvcf2db(object):
                 HQ2 = HQ2,
             )
             # FIXME probably also want phased, gt_bases
-
             samples.append(variant_dict)
 
         db.insert_many(table='variant', row_iter=samples)
@@ -149,6 +181,6 @@ if __name__ == "__main__":
         compressed = True
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
-    #parser.next()
+    parser.next()
     #parser.parse_all()
     
