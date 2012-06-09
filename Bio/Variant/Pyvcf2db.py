@@ -86,7 +86,7 @@ class Pyvcf2db(object):
         """
         PRIVATE
         Insert a row into database.
-        Note: does not commit. 
+        Note: does not commit.
 
         """
         # Organize and insert site/row/record info
@@ -108,7 +108,7 @@ class Pyvcf2db(object):
                     key_id = self.extra_site[key]
                 except KeyError:
                     key_id = db.insert_commit(table='key',
-                        key=key, number=None, 
+                        key=key, number=None,
                         type=None, description=None)
                     # TODO add key to key table
                 # TODO add INFO pair to narrow table
@@ -133,7 +133,7 @@ class Pyvcf2db(object):
             except TypeError:
                 AF = None
             alt_dict = dict(
-                alt_id = num+1,
+                alt_id = num + 1,
                 site = site_id,
                 alt = allele,
                 AF = AF,
@@ -183,4 +183,3 @@ if __name__ == "__main__":
     parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
     parser.next()
     #parser.parse_all()
-    

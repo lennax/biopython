@@ -131,7 +131,7 @@ class VariantDB(object):
     def query(self, query):
         """
         Run query on DB.
-        As DB will most likely be local, security is the user's concern. 
+        As DB will most likely be local, security is the user's concern.
 
         """
         raise NotImplementedError
