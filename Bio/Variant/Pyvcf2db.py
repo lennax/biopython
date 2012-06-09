@@ -100,30 +100,35 @@ class Pyvcf2db(object):
             qual = row.QUAL,
         )
 
-        # XXX would it make more sense to set default ones all at once
-        # then do `if key not in self.site_cols:` ?
-        for key in row.INFO.iterkeys():
-            if key in self.site_cols:
-                site_dict[key] = row.INFO.get(key)  # don't tempt fate
-            else:
-                try:
-                    key_id = self.extra_site[key]
-                except KeyError:
-                    key_id = db.insert_commit(table='key',
-                        key=key, number=None,
-                        type=None, description=None)
-                    # TODO add key to key table
-                # TODO add INFO pair to narrow table
-                # need site_id for this insert
-                # so have to store these somewhere and insert later
-                #db.insert_row(table='site_info', )
-
-        # Set any site info keys that were missing to None
+        # Set default site info keys
         for key in self.site_cols:
-            if key not in site_dict:
-                site_dict[key] = None
+            # get() will set missing to None
+            site_dict[key] = row.INFO.get(key)
+
+        # Organize extra site info
+        extra_sites = []
+        # Loop through keys in file
+        for key, value in row.INFO.iteritems():
+            # If it's a known key, skip
+            if key in self.site_cols or key == "AF":
+                continue
+            # If not known and not added in header, add it
+            if key not in self.extra_site:
+                 self.extra_site[key] = db.insert_commit(table='key',
+                    key=key, number=None,
+                    type=None, description=None)
+            # using [key] because if this fails, something is wrong
+            key_id = self.extra_site[key]
+            # Store extra site info to insert later
+            extra_sites.append(dict(key=key_id, value=value))
 
         site_id = db.insert_commit(table='site', **site_dict)
+
+        # Insert extra site info
+        for item in extra_sites:
+            item['site'] = site_id
+        db.insert_many(table='site_info', row_iter=extra_sites)
+
         # Organize and insert allele/alt info
         alleles = []
         for num, allele in enumerate(row.ALT):
