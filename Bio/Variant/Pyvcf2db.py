@@ -38,11 +38,10 @@ class Pyvcf2db(object):
 
         # get info tags stored in site table
         self.site_cols = [col[0] for col in self.db.schema['site'][9:-3]]
-        self.site_cols.append('AF')
         self.extra_site = {}
         # check whether file contains unknown ##INFO fields
         for info in self._parser.infos.itervalues():
-            if info.id not in self.site_cols:
+            if info.id not in self.site_cols and info.id != "AF":
                 # store unknown ##INFO fields in key table
                 new_id = self._add_key(info)
                 self.extra_site[info.id] = new_id
@@ -100,9 +99,12 @@ class Pyvcf2db(object):
             filter = row.FILTER,
             qual = row.QUAL,
         )
+        # copy col list to local scope to use as queue
+        #site_info = list(self.site_cols)
+        # TODO use "not in"
         for key in row.INFO.iterkeys():
             if key in self.site_cols:
-                site_dict[key] = row.INFO[key]
+                site_dict[key] = row.INFO[key]  # this should never fail
             else:
                 try:
                     key_id = self.extra_site[key]
@@ -115,6 +117,11 @@ class Pyvcf2db(object):
                 # need site_id for this insert
                 # so have to store these somewhere and insert later
                 #db.insert_row(table='site_info', )
+
+        # Set any site info keys that were missing to None
+        for key in self.site_cols:
+            if key not in site_dict:
+                site_dict[key] = None
 
             #NS = row.INFO.get('NS'),
             #DP = row.INFO.get('DP'),
@@ -181,5 +188,5 @@ if __name__ == "__main__":
         compressed = True
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
-    parser.next()
-    #parser.parse_all()
+    #parser.next()
+    parser.parse_all()
