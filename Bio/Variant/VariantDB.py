@@ -150,6 +150,7 @@ class VariantSqlite(VariantDB):
             dbname = "variant.db"
         self.conn = sqlite3.connect(dbname)
         self.cursor = self.conn.cursor()
+        self.cursor.execute("PRAGMA synchronous=OFF")
         for stmt in self.create_stmt.values():
             self.cursor.execute(stmt)
         self.conn.commit()
