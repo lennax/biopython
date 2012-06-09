@@ -99,12 +99,12 @@ class Pyvcf2db(object):
             filter = row.FILTER,
             qual = row.QUAL,
         )
-        # copy col list to local scope to use as queue
-        #site_info = list(self.site_cols)
-        # TODO use "not in"
+
+        # XXX would it make more sense to set default ones all at once
+        # then do `if key not in self.site_cols:` ?
         for key in row.INFO.iterkeys():
             if key in self.site_cols:
-                site_dict[key] = row.INFO[key]  # this should never fail
+                site_dict[key] = row.INFO.get(key)  # don't tempt fate
             else:
                 try:
                     key_id = self.extra_site[key]
@@ -122,12 +122,6 @@ class Pyvcf2db(object):
         for key in self.site_cols:
             if key not in site_dict:
                 site_dict[key] = None
-
-            #NS = row.INFO.get('NS'),
-            #DP = row.INFO.get('DP'),
-            #AA = row.INFO.get('AA'),
-            #DB = row.INFO.get('DB'),
-            #H2 = row.INFO.get('H2'),
 
         site_id = db.insert_commit(table='site', **site_dict)
         # Organize and insert allele/alt info
