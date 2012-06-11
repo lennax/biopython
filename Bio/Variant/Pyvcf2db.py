@@ -114,12 +114,13 @@ class Pyvcf2db(object):
                 continue
             # If not known and not added in header, add it
             if key not in self.extra_site:
-                 self.extra_site[key] = db.insert_commit(table='key',
+                self.extra_site[key] = db.insert_commit(table='key',
                     key=key, number=None,
                     type=None, description=None)
             # using [key] because if this fails, something is wrong
             key_id = self.extra_site[key]
             # Store extra site info to insert later
+            # TODO handle number from ##INFO
             extra_sites.append(dict(key=key_id, value=value))
 
         site_id = db.insert_commit(table='site', **site_dict)
@@ -130,6 +131,7 @@ class Pyvcf2db(object):
         db.insert_many(table='site_info', row_iter=extra_sites)
 
         # Organize and insert allele/alt info
+        # TODO for 4.1 put number = A here
         alleles = []
         for num, allele in enumerate(row.ALT):
             # Try to get AF from row INFO
@@ -149,6 +151,7 @@ class Pyvcf2db(object):
         db.insert_many(table='alt', row_iter=alleles)
 
         # Organize and insert sample/genotype info
+        # TODO handle arbitrary ##FORMAT
         samples = []
         for samp in row.samples:
             # Don't insert genotype that wasn't called XXX ?
