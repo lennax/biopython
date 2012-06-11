@@ -169,7 +169,7 @@ class VariantSqlite(VariantDB):
         return self.cursor.lastrowid
 
     def insert_row(self, table, **insert_dict):
-        """Insert a row into a table."""
+        """Insert a row into a table. NOTE: does not commit cursor!"""
         insert_string = self.ins_stmt[table]
         insert_dict['create_date'] = datetime.now()
         self.cursor.execute(insert_string, insert_dict)
@@ -182,7 +182,12 @@ class VariantSqlite(VariantDB):
         self.cursor.executemany(insert_string, row_iter)
 
     def query(self, query):
+        self.conn.row_factory = sqlite3.Row
         self.cursor.execute(query)
+        results = self.cursor.fetchall()
+        for row in results:
+            print row
+
 
 
 if __name__ == "__main__":
@@ -190,25 +195,37 @@ if __name__ == "__main__":
     meta_row = db.insert_commit(
         table="metadata",
         filename="myfile",
-        misc=json.dumps(dict(FORMATS="blahblah", INFOS="bloobloo")))
+        misc=json.dumps(dict(FORMATS="blahblah", INFOS="bloobloo"))
+    )
     site_row = db.insert_commit(
         table="site",
         metadata=meta_row,
-        accession="rf8320d",
-        position=12324,
-        site_id="ggsgdg",
         chrom=2,
+        position=12324,
+        accession="rf8320d",
+        site_id="ggsgdg",
+        ref="G",
         filter='q10',
-        qual='22',
-        misc=json.dumps(dict(INFO='something interesting')))
+        qual=22,
+        NS=3,
+        DP=2,
+        AA="G",
+        DB=False,
+        H2=False,
+    )
     variant_row = db.insert_row(
         table="variant",
         site=site_row,
         name="NA001",
-        ref="A",
-        alt="G",
-        misc=json.dumps(dict(called=True, phased=False)))
+        GT="0|0",
+        GQ=34,
+        DP=2,
+        HQ1=25,
+        HQ2=35,
+    )
     db.conn.commit()
     print "meta", meta_row
     print "site", site_row
     print "variant", variant_row
+
+    db.query("SELECT site.chrom, site.position, variant.GT FROM site, variant WHERE site.id = variant.site")
