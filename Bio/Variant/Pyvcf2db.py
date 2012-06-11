@@ -27,6 +27,7 @@ class Pyvcf2db(object):
                              prepend_chr=prepend_chr)
 
         # Store file info in db
+        # TODO remove json
         file_data = json.dumps(dict(
             filters = self._parser.filters,
             formats = self._parser.formats,
@@ -38,13 +39,20 @@ class Pyvcf2db(object):
 
         # get info tags stored in site table
         self.site_cols = [col[0] for col in self.db.schema['site'][9:-3]]
+        # dict to store key table IDs for arbitrary site keys
         self.extra_site = {}
+        # dict to store size for list-type arbitrary site keys
+        self.extra_site_num = {}
         # check whether file contains unknown ##INFO fields
         for info in self._parser.infos.itervalues():
             if info.id not in self.site_cols and info.id != "AF":
                 # store unknown ##INFO fields in key table
                 new_id = self._add_key(info)
                 self.extra_site[info.id] = new_id
+                # Store size of list-type keys
+                # FIXME cmp between str/int/None requires extreme caution
+                if info.num > 1 or info.num in ("A", "G"):
+                    self.extra_site_num[info.id] = info.num
 
         # get format tags stored in variant table
         self.variant_cols = [col[0] for col in self.db.schema['variant'][3:-3]]
@@ -93,7 +101,7 @@ class Pyvcf2db(object):
             metadata = self.metadata,
             chrom = row.CHROM,
             position = row.POS,
-            accession = None,  # I think this is ##reference
+            accession = None,  # FIXME I think this is ##reference
             site_id = row.ID,
             ref = row.REF,
             filter = row.FILTER,
@@ -120,8 +128,21 @@ class Pyvcf2db(object):
             # using [key] because if this fails, something is wrong
             key_id = self.extra_site[key]
             # Store extra site info to insert later
-            # TODO handle number from ##INFO
-            extra_sites.append(dict(key=key_id, value=value))
+            # Lists: Same key, multiple values
+            if key in self.extra_site_num:
+                size = self.extra_site_num[key]
+                if size not in ('A', 'G'):
+                    # FIXME is this too restrictive?
+                    # could just check if value is iterable.
+                    # That's how number=. will have to be handled anyway. 
+                    for x in xrange(self.extra_site_num[key]):
+                        extra_sites.append(dict(key=key_id, value=value[x]))
+                else:
+                    # FIXME 1. can an INFO ever be G?
+                    # 2. How to get A to allele? 
+                    pass
+            else:
+                extra_sites.append(dict(key=key_id, value=value))
 
         site_id = db.insert_commit(table='site', **site_dict)
 
