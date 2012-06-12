@@ -37,6 +37,7 @@ class Pyvcf2db(object):
         self.metadata = db.insert_commit(table='metadata',
                                   filename=filename, misc=file_data)
 
+        # FIXME the next two for loops could be refactored
         # get info tags stored in site table
         self.site_cols = [col[0] for col in self.db.schema['site'][9:-3]]
         # dict to store key table IDs for arbitrary site keys
@@ -50,19 +51,23 @@ class Pyvcf2db(object):
                 new_id = self._add_key(info)
                 self.extra_site[info.id] = new_id
                 # Store size of list-type keys
-                # FIXME cmp between str/int/None requires extreme caution
-                if info.num > 1 or info.num in ("A", "G"):
+                # info.num can be an integer, None, 'A' or 'G'
+                if info.num != 0 and info.num != 1:
                     self.extra_site_num[info.id] = info.num
 
         # get format tags stored in variant table
         self.variant_cols = [col[0] for col in self.db.schema['variant'][3:-3]]
         self.extra_variant = {}
+        self.extra_variant_num = {}
         # check whether file contains unknown ##FORMAT fields
         for fmt in self._parser.formats.itervalues():
             if fmt.id not in self.variant_cols:
                 # store unknown ##FORMAT fields in key table
                 new_id = self._add_key(fmt)
                 self.extra_variant[fmt.id] = new_id
+                # Store size of list-type keys
+                if fmt.num != 0 and fmt.num != 1:
+                    self.extra_variant_num[fmt.id] = fmt.num
 
     def next(self):
         """Read one row into database"""
