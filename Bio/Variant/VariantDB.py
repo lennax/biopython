@@ -74,7 +74,7 @@ class VariantDB(object):
             ('VALIDATED', 'INTEGER'),  # bool
             # Some vcf 4.1 additions
             ('H3', 'INTEGER'),  # bool
-            ('1000G', 'INTEGER'),  # bool
+            ('THOUSANDG', 'INTEGER'),  # bool; == 1000G
             ('create_date', 'TIMESTAMP NOT NULL'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
@@ -224,19 +224,31 @@ if __name__ == "__main__":
         ref="G",
         filter='q10',
         qual=22,
-        NS=3,
-        DP=2,
         AA="G",
+        AN=None,
+        BQ=None,
+        CIGAR=None,
         DB=False,
+        DP=2,
+        END=None,
         H2=False,
+        MQ=None,
+        MQ0=None,
+        NS=3,
+        SB=None,
+        SOMATIC=None,
+        VALIDATED=None,
+        H3=None,
+        THOUSANDG=None,
     )
     variant_row = db.insert_row(
         table="variant",
         site=site_row,
         name="NA001",
         GT="0|0",
-        GQ=34,
         DP=2,
+        FT=None,
+        GQ=34,
         HQ1=25,
         HQ2=35,
     )
