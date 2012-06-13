@@ -57,11 +57,24 @@ class VariantDB(object):
             ('ref', 'TEXT'),
             ('filter', 'TEXT'),
             ('qual', 'TEXT'),
-            ('NS', 'INTEGER'),
-            ('DP', 'INTEGER'),
+            # Reserved INFO in vcf 4.0
             ('AA', 'TEXT'),
+            ('AN', 'INTEGER'),
+            ('BQ', 'FLOAT'),
+            ('CIGAR', 'TEXT'),
             ('DB', 'INTEGER'),  # bool
+            ('DP', 'INTEGER'),
+            ('END', 'INTEGER'),
             ('H2', 'INTEGER'),  # bool
+            ('MQ', 'FLOAT'),
+            ('MQ0', 'INTEGER'),
+            ('NS', 'INTEGER'),
+            ('SB', 'TEXT'),
+            ('SOMATIC', 'INTEGER'),  # bool
+            ('VALIDATED', 'INTEGER'),  # bool
+            # Some vcf 4.1 additions
+            ('H3', 'INTEGER'),  # bool
+            ('1000G', 'INTEGER'),  # bool
             ('create_date', 'TIMESTAMP NOT NULL'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
@@ -71,16 +84,20 @@ class VariantDB(object):
             ('alt_id', 'INTEGER'),
             ('site', 'INTEGER'),
             ('alt', 'TEXT'),
-            ('AF', 'REAL'),
+            # reserved info keys that map better to allele (number=A)
+            ('AC', 'INTEGER'),
+            ('AF', 'FLOAT'),
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
         ],
         'variant': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('site', 'INTEGER'),
             ('name', 'TEXT'),
+            # reserved format keys from vcf 4.0 (GT must be first)
             ('GT', 'TEXT'),
-            ('GQ', 'INTEGER'),
             ('DP', 'INTEGER'),
+            ('FT', 'TEXT'),
+            ('GQ', 'INTEGER'),
             ('HQ1', 'INTEGER'),
             ('HQ2', 'INTEGER'),
             ('create_date', 'TIMESTAMP'),
