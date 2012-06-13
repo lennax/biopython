@@ -106,6 +106,7 @@ class VariantDB(object):
         ],
         'key': [
             ('id', 'INTEGER PRIMARY KEY'),
+            ('scope', 'TEXT'),
             ('key', 'TEXT'),
             ('number', 'TEXT'),
             ('type', 'TEXT'),

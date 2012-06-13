@@ -37,39 +37,32 @@ class Pyvcf2db(object):
         self.metadata = db.insert_commit(table='metadata',
                                   filename=filename, misc=file_data)
 
-        # FIXME the next two for loops could be refactored
-        # get info tags stored in site table
-        self.site_cols = [col[0] for col in self.db.schema['site'][9:-3]]
-        # dict to store key table IDs for arbitrary site keys
-        self.extra_site = {}
-        # dict to store size for list-type arbitrary site keys
-        self.extra_site_num = {}
-        # check whether file contains unknown ##INFO fields
-        for info in self._parser.infos.itervalues():
-            if info.id not in self.site_cols and info.id != "AF":
-                # store unknown ##INFO fields in key table
-                new_id = self._add_key(info)
-                self.extra_site[info.id] = new_id
-                # Store size of list-type keys
-                # info.num can be an integer, None, 'A' or 'G'
-                if info.num != 0 and info.num != 1:
-                    self.extra_site_num[info.id] = info.num
+        self.scopes = ("INFO", "FORMAT")
+        # get INFO tags stored in site table
+        # cols 0-8 are fixed; last 3 cols are dates and FK
+        self.INFO_cols = [col[0] for col in self.db.schema['site'][9:-3]]
+        # get FORMAT tags stored in variant table
+        # cols 0-2 are fixed; last 3 cols are dates and FK
+        self.FORMAT_cols = [col[0] for col in self.db.schema['variant'][3:-3]]
+        # Init empty dicts for storing arbitrary keys
+        for scope in self.scopes:
+            for dict_name in ("extra_%s", "%s_A", "%s_G"):
+                setattr(self, dict_name % scope, {})
+        # Store reserved A keys
+        self.INFO_A['AC'] = None
+        self.INFO_A['AF'] = None
+        # Associate key lists with tables
+        # FIXME this is still kind of nasty; tied to _find_key
+        self.INFO_tables = dict(default_keys='site', new_keys='site_info',
+                                A_keys='alt', G_keys='')  # FIXME
+        self.FORMAT_tables = dict(default_keys='variant',
+                                  new_keys='variant_info',
+                                  A_keys='', G_keys='')  # FIXME
 
-        # get format tags stored in variant table
-        self.variant_cols = [col[0] for col in self.db.schema['variant'][3:-3]]
-        self.extra_variant = {}
-        self.extra_variant_num = {}
-        # check whether file contains unknown ##FORMAT fields
-        for fmt in self._parser.formats.itervalues():
-            if fmt.id not in self.variant_cols:
-                # store unknown ##FORMAT fields in key table
-                new_id = self._add_key(fmt)
-                self.extra_variant[fmt.id] = new_id
-                # Store size of list-type keys
-                if fmt.num != 0 and fmt.num != 1:
-                    self.extra_variant_num[fmt.id] = fmt.num
+        # Scan header ##INFO and ##FORMAT lines for new keys
+        self._scan_headers()
 
-    def next(self):
+    def parse_next(self):
         """Read one row into database"""
         # call next() on parser
         row = self._parser.next()
@@ -84,15 +77,51 @@ class Pyvcf2db(object):
             self._insert_row(row)
         db.conn.commit()
 
-    def _add_key(self, field):
+    def _scan_headers(self):
+        for scope in self.scopes:
+            key_iter = getattr(self._parser, "%ss" % scope.lower()).itervalues()
+            for field in key_iter:
+                if self._find_key(scope, field.id) is None:
+                    self._add_key(scope, field)
+
+    def _find_key(self, scope, key):
+        """Look for key; if found return table, else None"""
+        if scope not in self.scopes:
+            raise TypeError("Unknown key scope '%s'" % scope)
+        key_lists = {
+            'default_keys': getattr(self, "%s_cols" % scope),
+            'new_keys': getattr(self, "extra_%s" % scope).iterkeys(),
+            'A_keys': getattr(self, "%s_A" % scope).iterkeys(),
+            'G_keys': getattr(self, "%s_G" % scope).iterkeys(),
+        }
+        tables = getattr(self, "%s_tables" % scope)
+        for name, key_list in key_lists.iteritems():
+            if key in key_list:
+                return tables[name]
+        else:  # key was not found on any list
+            return None
+
+    def _add_key(self, scope, field):
         """Add unknown keys to key table, return id"""
+        if scope not in self.scopes:
+            raise TypeError("Unknown key scope '%s'" % scope)
         insert_dict = dict(
+            scope = scope,
             key = field.id,
             number = field.num,
             type = field.type,
             description = field.desc,
         )
-        return db.insert_commit(table='key', **insert_dict)
+        new_id = db.insert_commit(table='key', **insert_dict)
+        new_keys = getattr(self, "extra_%s" % scope)
+        A_keys = getattr(self, "%s_A" % scope)
+        G_keys = getattr(self, "%s_G" % scope)
+        if field.num == "A":
+            A_keys[field.id] = new_id
+        elif field.num == "G":
+            G_keys[field.id] = new_id
+        else:
+            new_keys[field.id] = new_id
 
     def _insert_row(self, row):
         """
@@ -216,5 +245,5 @@ if __name__ == "__main__":
         compressed = True
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
-    #parser.next()
-    parser.parse_all()
+    #parser.parse_next()
+    #parser.parse_all()
