@@ -90,14 +90,16 @@ class Pyvcf2db(object):
             raise TypeError("Unknown key scope '%s'" % scope)
         key_lists = {
             'default_keys': getattr(self, "%s_cols" % scope),
-            'new_keys': getattr(self, "extra_%s" % scope).iterkeys(),
-            'A_keys': getattr(self, "%s_A" % scope).iterkeys(),
-            'G_keys': getattr(self, "%s_G" % scope).iterkeys(),
+            'new_keys': getattr(self, "extra_%s" % scope),
+            'A_keys': getattr(self, "%s_A" % scope),
+            'G_keys': getattr(self, "%s_G" % scope),
         }
         tables = getattr(self, "%s_tables" % scope)
         for name, key_list in key_lists.iteritems():
             if key in key_list:
-                return tables[name]
+                if name == 'default_keys':
+                    return (tables[name], None)
+                return (tables[name], key_list[key])
         else:  # key was not found on any list
             return None
 
