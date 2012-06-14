@@ -82,7 +82,8 @@ class Pyvcf2db(object):
             key_iter = getattr(self._parser, "%ss" % scope.lower()).itervalues()
             for field in key_iter:
                 if self._find_key(scope, field.id) is None:
-                    self._add_key(scope, *field)  # XXX ** causes error
+                    self._add_key(scope, *field)
+                    # XXX ** causes error; could use _as_dict() but new obj
 
     def _find_key(self, scope, key):
         """Look for key; if found return table, else None"""
@@ -228,6 +229,8 @@ class Pyvcf2db(object):
             # FIXME probably also want phased, gt_bases
             samples.append(variant_dict)
 
+        # XXX insert_many precludes arbitrary format (need id)
+        # XXX unless I use and trust an internal row counter
         db.insert_many(table='variant', row_iter=samples)
 
 
