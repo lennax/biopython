@@ -82,7 +82,7 @@ class Pyvcf2db(object):
             key_iter = getattr(self._parser, "%ss" % scope.lower()).itervalues()
             for field in key_iter:
                 if self._find_key(scope, field.id) is None:
-                    self._add_key(scope, field)
+                    self._add_key(scope, *field)  # XXX ** causes error
 
     def _find_key(self, scope, key):
         """Look for key; if found return table, else None"""
@@ -103,27 +103,27 @@ class Pyvcf2db(object):
         else:  # key was not found on any list
             return None
 
-    def _add_key(self, scope, field):
+    def _add_key(self, scope, key_id, num, key_type, desc):
         """Add unknown keys to key table, return id"""
         if scope not in self.scopes:
             raise TypeError("Unknown key scope '%s'" % scope)
         insert_dict = dict(
             scope = scope,
-            key = field.id,
-            number = field.num,
-            type = field.type,
-            description = field.desc,
+            key = key_id,
+            number = num,
+            type = key_type,
+            description = desc,
         )
         new_id = db.insert_commit(table='key', **insert_dict)
         new_keys = getattr(self, "extra_%s" % scope)
         A_keys = getattr(self, "%s_A" % scope)
         G_keys = getattr(self, "%s_G" % scope)
-        if field.num == "A":
-            A_keys[field.id] = new_id
-        elif field.num == "G":
-            G_keys[field.id] = new_id
+        if num == "A":
+            A_keys[key_id] = new_id
+        elif num == "G":
+            G_keys[key_id] = new_id
         else:
-            new_keys[field.id] = new_id
+            new_keys[key_id] = new_id
 
     def _insert_row(self, row):
         """
@@ -145,7 +145,7 @@ class Pyvcf2db(object):
         )
 
         # Set default site info keys
-        for key in self.site_cols:
+        for key in self.INFO_cols:
             # get() will set missing to None
             site_dict[key] = row.INFO.get(key)
 
@@ -153,32 +153,21 @@ class Pyvcf2db(object):
         extra_sites = []
         # Loop through keys in file
         for key, value in row.INFO.iteritems():
-            # If it's a known key, skip
-            if key in self.site_cols or key == "AF":
-                continue
-            # If not known and not added in header, add it
-            if key not in self.extra_site:
-                self.extra_site[key] = db.insert_commit(table='key',
-                    key=key, number=None,
-                    type=None, description=None)
-            # using [key] because if this fails, something is wrong
-            key_id = self.extra_site[key]
-            # Store extra site info to insert later
-            # Lists: Same key, multiple values
-            if key in self.extra_site_num:
-                size = self.extra_site_num[key]
-                if size not in ('A', 'G'):
-                    # FIXME is this too restrictive?
-                    # could just check if value is iterable.
-                    # That's how number=. will have to be handled anyway. 
-                    for x in xrange(self.extra_site_num[key]):
-                        extra_sites.append(dict(key=key_id, value=value[x]))
+            if self._find_key('INFO', key) is None:
+                self._add_key('INFO', key, None, None, None)
+            table, key_id = self._find_key('INFO', key)
+            if table == 'site':
+                continue  # default keys already added
+            elif table == 'site_info':
+                if isinstance(value, list):
+                    for item in value:
+                        extra_sites.append(dict(key=key_id, value=item))
                 else:
-                    # FIXME 1. can an INFO ever be G?
-                    # 2. How to get A to allele? 
-                    pass
+                    extra_sites.append(dict(key=key_id, value=value))
             else:
-                extra_sites.append(dict(key=key_id, value=value))
+                # FIXME 1. can an INFO ever be G?
+                # 2. How to get A to allele?
+                pass
 
         site_id = db.insert_commit(table='site', **site_dict)
 
@@ -197,10 +186,16 @@ class Pyvcf2db(object):
                 AF = AF_list[num]
             except TypeError:
                 AF = None
+            AC_list = row.INFO.get('AC')
+            try:
+                AC = AC_list[num]
+            except TypeError:
+                AC = None
             alt_dict = dict(
                 alt_id = num + 1,
                 site = site_id,
                 alt = allele,
+                AC = AC,
                 AF = AF,
             )
             alleles.append(alt_dict)
@@ -224,8 +219,9 @@ class Pyvcf2db(object):
                 site = site_id,
                 name = samp.sample,
                 GT = samp.gt_nums,
-                GQ = samp.data.get('GQ'),
                 DP = samp.data.get('DP'),
+                FT = samp.data.get('FT'),
+                GQ = samp.data.get('GQ'),
                 HQ1 = HQ1,
                 HQ2 = HQ2,
             )
@@ -248,4 +244,4 @@ if __name__ == "__main__":
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
     #parser.parse_next()
-    #parser.parse_all()
+    parser.parse_all()
