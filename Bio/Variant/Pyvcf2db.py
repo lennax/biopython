@@ -180,25 +180,23 @@ class Pyvcf2db(object):
         # Organize and insert allele/alt info
         # TODO for 4.1 put number = A here
         alleles = []
+        # Dict for INFOs that are per-A
+        allele_infos = {}
+        for key in self.INFO_A.iterkeys():
+            allele_infos[key] = row.INFO.get(key)
         for num, allele in enumerate(row.ALT):
-            # Try to get AF from row INFO
-            AF_list = row.INFO.get('AF')
-            try:
-                AF = AF_list[num]
-            except TypeError:
-                AF = None
-            AC_list = row.INFO.get('AC')
-            try:
-                AC = AC_list[num]
-            except TypeError:
-                AC = None
             alt_dict = dict(
                 alt_id = num + 1,
                 site = site_id,
                 alt = allele,
-                AC = AC,
-                AF = AF,
             )
+            # Set default per-A values
+            for key in self.INFO_A.iterkeys():
+                value = allele_infos[key]
+                try:
+                    alt_dict[key] = value[num]
+                except TypeError:
+                    alt_dict[key] = None
             alleles.append(alt_dict)
 
         db.insert_many(table='alt', row_iter=alleles)
