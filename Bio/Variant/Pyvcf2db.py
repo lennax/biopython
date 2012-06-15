@@ -104,7 +104,7 @@ class Pyvcf2db(object):
         else:  # key was not found on any list
             return None
 
-    def _add_key(self, scope, key_id, num, key_type, desc):
+    def _add_key(self, scope, key_id, num=None, key_type=None, desc=None):
         """Add unknown keys to key table, return id"""
         if scope not in self.scopes:
             raise TypeError("Unknown key scope '%s'" % scope)
@@ -155,7 +155,7 @@ class Pyvcf2db(object):
         # Loop through keys in file
         for key, value in row.INFO.iteritems():
             if self._find_key('INFO', key) is None:
-                self._add_key('INFO', key, None, None, None)
+                self._add_key('INFO', key)
             table, key_id = self._find_key('INFO', key)
             if table == 'site':
                 continue  # default keys already added
