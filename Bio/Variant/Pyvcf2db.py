@@ -49,8 +49,7 @@ class Pyvcf2db(object):
             for dict_name in ("extra_%s", "%s_A", "%s_G"):
                 setattr(self, dict_name % scope, {})
         # Store reserved A keys
-        self.INFO_A['AC'] = None
-        self.INFO_A['AF'] = None
+        self.default_INFO_A = ['AC', 'AF']
         # Associate key lists with tables
         # FIXME this is still kind of nasty; tied to _find_key
         self.INFO_tables = dict(default_keys='site', new_keys='site_info',
@@ -179,10 +178,10 @@ class Pyvcf2db(object):
         # Organize and insert allele/alt info
         # TODO for 4.1 put number = A here
         alleles = []
-        # Dict for INFOs that are per-A
-        allele_infos = {}
-        for key in self.INFO_A.iterkeys():
-            allele_infos[key] = row.INFO.get(key)
+        # Dict for default INFOs that are per-A
+        default_allele_infos = {}
+        for key in self.default_INFO_A:
+            default_allele_infos[key] = row.INFO.get(key)
         for num, allele in enumerate(row.ALT):
             alt_dict = dict(
                 alt_id = num + 1,
@@ -190,8 +189,8 @@ class Pyvcf2db(object):
                 alt = allele,
             )
             # Set default per-A values
-            for key in self.INFO_A.iterkeys():
-                value = allele_infos[key]
+            for key in self.default_INFO_A:
+                value = default_allele_infos[key]
                 try:
                     alt_dict[key] = value[num]
                 except TypeError:
@@ -199,6 +198,15 @@ class Pyvcf2db(object):
             alleles.append(alt_dict)
 
         db.insert_many(table='alt', row_iter=alleles)
+
+        # Organize extra alt info
+        # FIXME have to do all this in the ALT loop
+        #       unless I change the alt FK in alt_info to be alt_id
+        #       makes joins a little uglier but insert easier
+        allele_infos = {}
+        for key in self.INFO_A.iterkeys():
+            allele_infos[key] = row.INFO.get(key)
+
 
         # Organize and insert sample/genotype info
         # TODO handle arbitrary ##FORMAT
@@ -228,6 +236,8 @@ class Pyvcf2db(object):
 
         # XXX insert_many precludes arbitrary format (need id)
         # XXX unless I use and trust an internal row counter
+        #     or make samples table (e.g. id=1 sampname=NA0001)
+        #     and have sample_format use site and sampname instead of sample id
         db.insert_many(table='sample', row_iter=samples)
 
 
