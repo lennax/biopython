@@ -89,7 +89,7 @@ class VariantDB(object):
             ('AF', 'FLOAT'),
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
         ],
-        'variant': [
+        'sample': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('site', 'INTEGER'),
             ('name', 'TEXT'),
@@ -120,12 +120,12 @@ class VariantDB(object):
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
-        'variant_info': [
+        'sample_format': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('variant', 'INTEGER'),
+            ('sample', 'INTEGER'),
             ('key', 'INTEGER'),
             ('value', 'TEXT'),
-            ('FOREIGN KEY', '(variant) REFERENCES variant(id)'),
+            ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
     }
@@ -242,8 +242,8 @@ if __name__ == "__main__":
         H3=None,
         THOUSANDG=None,
     )
-    variant_row = db.insert_row(
-        table="variant",
+    sample_row = db.insert_row(
+        table="sample",
         site=site_row,
         name="NA001",
         GT="0|0",
@@ -256,6 +256,6 @@ if __name__ == "__main__":
     db.conn.commit()
     print "meta", meta_row
     print "site", site_row
-    print "variant", variant_row
+    print "sample", sample_row
 
-    db.query("SELECT site.chrom, site.position, variant.GT FROM site, variant WHERE site.id = variant.site")
+    db.query("SELECT site.chrom, site.position, sample.GT FROM site, sample WHERE site.id = sample.site")

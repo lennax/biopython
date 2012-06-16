@@ -41,9 +41,9 @@ class Pyvcf2db(object):
         # get INFO tags stored in site table
         # cols 0-8 are fixed; last 3 cols are dates and FK
         self.INFO_cols = [col[0] for col in self.db.schema['site'][9:-3]]
-        # get FORMAT tags stored in variant table
+        # get FORMAT tags stored in sample table
         # cols 0-2 are fixed; last 3 cols are dates and FK
-        self.FORMAT_cols = [col[0] for col in self.db.schema['variant'][3:-3]]
+        self.FORMAT_cols = [col[0] for col in self.db.schema['sample'][3:-3]]
         # Init empty dicts for storing arbitrary keys
         for scope in self.scopes:
             for dict_name in ("extra_%s", "%s_A", "%s_G"):
@@ -55,8 +55,8 @@ class Pyvcf2db(object):
         # FIXME this is still kind of nasty; tied to _find_key
         self.INFO_tables = dict(default_keys='site', new_keys='site_info',
                                 A_keys='alt', G_keys='')  # FIXME
-        self.FORMAT_tables = dict(default_keys='variant',
-                                  new_keys='variant_info',
+        self.FORMAT_tables = dict(default_keys='sample',
+                                  new_keys='sample_format',
                                   A_keys='', G_keys='')  # FIXME
 
         # Scan header ##INFO and ##FORMAT lines for new keys
@@ -214,7 +214,7 @@ class Pyvcf2db(object):
                 HQ1, HQ2 = HQ
             except TypeError:
                 HQ1 = HQ2 = None
-            variant_dict = dict(
+            sample_dict = dict(
                 site = site_id,
                 name = samp.sample,
                 GT = samp.gt_nums,
@@ -225,11 +225,11 @@ class Pyvcf2db(object):
                 HQ2 = HQ2,
             )
             # FIXME probably also want phased, gt_bases
-            samples.append(variant_dict)
+            samples.append(sample_dict)
 
         # XXX insert_many precludes arbitrary format (need id)
         # XXX unless I use and trust an internal row counter
-        db.insert_many(table='variant', row_iter=samples)
+        db.insert_many(table='sample', row_iter=samples)
 
 
 if __name__ == "__main__":
