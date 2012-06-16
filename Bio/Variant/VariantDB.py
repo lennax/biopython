@@ -119,6 +119,17 @@ class VariantDB(object):
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
+        'alt_info': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('alt', 'INTEGER'),
+            ('sample', 'INTEGER DEFAULT NULL'),
+            ('key', 'INTEGER'),
+            ('value', 'TEXT'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+            ('FOREIGN KEY', '(alt) REFERENCES alt(id)'),
+            ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
+            ('FOREIGN KEY', '(key) REFERENCES key(id)'),
+        ],
         'sample_format': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('sample', 'INTEGER'),
