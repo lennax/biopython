@@ -44,7 +44,6 @@ class VariantDB(object):
             ('id', 'INTEGER PRIMARY KEY'),
             ('filename', 'TEXT'),
             ('misc', 'TEXT'),
-            ('create_date', 'TIMESTAMP NOT NULL'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
         ],
         'site': [
@@ -74,7 +73,6 @@ class VariantDB(object):
             # Some vcf 4.1 additions
             ('H3', 'INTEGER'),  # bool
             ('THOUSANDG', 'INTEGER'),  # bool; == 1000G
-            ('create_date', 'TIMESTAMP NOT NULL'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
         ],
@@ -86,6 +84,7 @@ class VariantDB(object):
             # reserved info keys that map better to allele (number=A)
             ('AC', 'INTEGER'),
             ('AF', 'FLOAT'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
         ],
         'sample': [
@@ -99,7 +98,6 @@ class VariantDB(object):
             ('GQ', 'INTEGER'),
             ('HQ1', 'INTEGER'),
             ('HQ2', 'INTEGER'),
-            ('create_date', 'TIMESTAMP'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
         ],
@@ -110,12 +108,14 @@ class VariantDB(object):
             ('number', 'TEXT'),
             ('type', 'TEXT'),
             ('description', 'TEXT'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
         ],
         'site_info': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('site', 'INTEGER'),
             ('key', 'INTEGER'),
             ('value', 'TEXT'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
@@ -124,6 +124,7 @@ class VariantDB(object):
             ('sample', 'INTEGER'),
             ('key', 'INTEGER'),
             ('value', 'TEXT'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
@@ -188,14 +189,11 @@ class VariantSqlite(VariantDB):
     def insert_row(self, table, **insert_dict):
         """Insert a row into a table. NOTE: does not commit cursor!"""
         insert_string = self.ins_stmt[table]
-        insert_dict['create_date'] = datetime.now()
         self.cursor.execute(insert_string, insert_dict)
 
     def insert_many(self, table, row_iter):
         """Insert multiple rows; provide an iterable of dicts"""
         insert_string = self.ins_stmt[table]
-        for insert_dict in row_iter:
-            insert_dict['create_date'] = datetime.now()
         self.cursor.executemany(insert_string, row_iter)
 
     def query(self, query):
@@ -218,8 +216,7 @@ if __name__ == "__main__":
         table="site",
         metadata=meta_row,
         chrom=2,
-        position=12324,
-        accession="rf8320d",
+        pos=12324,
         site_id="ggsgdg",
         ref="G",
         filter='q10',
@@ -257,4 +254,4 @@ if __name__ == "__main__":
     print "site", site_row
     print "sample", sample_row
 
-    db.query("SELECT site.chrom, site.position, sample.GT FROM site, sample WHERE site.id = sample.site")
+    db.query("SELECT site.chrom, site.pos, sample.GT FROM site, sample WHERE site.id = sample.site")
