@@ -137,8 +137,7 @@ class Pyvcf2db(object):
         site_dict = dict(
             metadata = self.metadata,
             chrom = row.CHROM,
-            position = row.POS,
-            accession = None,  # FIXME I think this is ##reference
+            pos = row.POS,
             site_id = row.ID,
             ref = row.REF,
             filter = row.FILTER,
