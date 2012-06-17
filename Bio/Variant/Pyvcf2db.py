@@ -39,11 +39,11 @@ class Pyvcf2db(object):
 
         self.scopes = ("INFO", "FORMAT")
         # get INFO tags stored in site table
-        # cols 0-8 are fixed; last 3 cols are dates and FK
-        self.INFO_cols = [col[0] for col in self.db.schema['site'][9:-3]]
+        # cols 0-7 are fixed; last 2 cols are date and FK
+        self.INFO_cols = [col[0] for col in self.db.schema['site'][8:-2]]
         # get FORMAT tags stored in sample table
-        # cols 0-2 are fixed; last 3 cols are dates and FK
-        self.FORMAT_cols = [col[0] for col in self.db.schema['sample'][3:-3]]
+        # cols 0-2 are fixed; last 2 cols are date and FK
+        self.FORMAT_cols = [col[0] for col in self.db.schema['sample'][3:-2]]
         # Init empty dicts for storing arbitrary keys
         for scope in self.scopes:
             for dict_name in ("extra_%s", "%s_A", "%s_G"):
