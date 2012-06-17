@@ -41,9 +41,9 @@ class Pyvcf2db(object):
         # get INFO tags stored in site table
         # cols 0-7 are fixed; last 2 cols are date and FK
         self.INFO_cols = [col[0] for col in self.db.schema['site'][8:-2]]
-        # get FORMAT tags stored in sample table
+        # get FORMAT tags stored in call table
         # cols 0-2 are fixed; last 2 cols are date and FK
-        self.FORMAT_cols = [col[0] for col in self.db.schema['sample'][3:-2]]
+        self.FORMAT_cols = [col[0] for col in self.db.schema['call'][3:-2]]
         # Init empty dicts for storing arbitrary keys
         for scope in self.scopes:
             for dict_name in ("extra_%s", "%s_A", "%s_G"):
@@ -54,8 +54,8 @@ class Pyvcf2db(object):
         # FIXME this is still kind of nasty; tied to _find_key
         self.INFO_tables = dict(default_keys='site', new_keys='site_info',
                                 A_keys='alt', G_keys='')  # FIXME
-        self.FORMAT_tables = dict(default_keys='sample',
-                                  new_keys='sample_format',
+        self.FORMAT_tables = dict(default_keys='call',
+                                  new_keys='call_format',
                                   A_keys='', G_keys='')  # FIXME
 
         # Scan header ##INFO and ##FORMAT lines for new keys
@@ -208,9 +208,9 @@ class Pyvcf2db(object):
             allele_infos[key] = row.INFO.get(key)
 
 
-        # Organize and insert sample/genotype info
+        # Organize and insert call/genotype info
         # TODO handle arbitrary ##FORMAT
-        samples = []
+        calls = []
         for samp in row.samples:
             # Don't insert genotype that wasn't called XXX ?
             if samp.called == False:
@@ -221,7 +221,7 @@ class Pyvcf2db(object):
                 HQ1, HQ2 = HQ
             except TypeError:
                 HQ1 = HQ2 = None
-            sample_dict = dict(
+            call_dict = dict(
                 site = site_id,
                 name = samp.sample,
                 GT = samp.gt_nums,
@@ -232,13 +232,13 @@ class Pyvcf2db(object):
                 HQ2 = HQ2,
             )
             # FIXME probably also want phased, gt_bases
-            samples.append(sample_dict)
+            calls.append(call_dict)
 
         # XXX insert_many precludes arbitrary format (need id)
         # XXX unless I use and trust an internal row counter
         #     or make samples table (e.g. id=1 sampname=NA0001)
-        #     and have sample_format use site and sampname instead of sample id
-        db.insert_many(table='sample', row_iter=samples)
+        #     and have call_format use site and sampname instead of call id
+        db.insert_many(table='call', row_iter=calls)
 
 
 if __name__ == "__main__":

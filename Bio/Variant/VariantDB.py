@@ -87,7 +87,7 @@ class VariantDB(object):
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
         ],
-        'sample': [
+        'call': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('site', 'INTEGER'),
             ('name', 'TEXT'),
@@ -122,21 +122,21 @@ class VariantDB(object):
         'alt_info': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('alt', 'INTEGER'),
-            ('sample', 'INTEGER DEFAULT NULL'),
+            ('call', 'INTEGER DEFAULT NULL'),
             ('key', 'INTEGER'),
             ('value', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(alt) REFERENCES alt(id)'),
-            ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
+            ('FOREIGN KEY', '(call) REFERENCES call(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
-        'sample_format': [
+        'call_format': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('sample', 'INTEGER'),
+            ('call', 'INTEGER'),
             ('key', 'INTEGER'),
             ('value', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
-            ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
+            ('FOREIGN KEY', '(call) REFERENCES call(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
     }
@@ -249,8 +249,8 @@ if __name__ == "__main__":
         H3=None,
         THOUSANDG=None,
     )
-    sample_row = db.insert_row(
-        table="sample",
+    call_row = db.insert_row(
+        table="call",
         site=site_row,
         name="NA001",
         GT="0|0",
@@ -263,6 +263,6 @@ if __name__ == "__main__":
     db.conn.commit()
     print "meta", meta_row
     print "site", site_row
-    print "sample", sample_row
+    print "call", call_row
 
-    db.query("SELECT site.chrom, site.pos, sample.GT FROM site, sample WHERE site.id = sample.site")
+    db.query("SELECT site.chrom, site.pos, call.GT FROM site, call WHERE site.id = call.site")
