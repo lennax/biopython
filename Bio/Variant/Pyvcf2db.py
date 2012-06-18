@@ -220,6 +220,7 @@ class Pyvcf2db(object):
         # Organize and insert call/genotype info
         # TODO handle arbitrary ##FORMAT
         calls = []
+        extra_calls = []
         for samp in row.samples:
             # Don't insert genotype that wasn't called XXX ?
             if samp.called == False:
@@ -242,6 +243,21 @@ class Pyvcf2db(object):
             )
             # FIXME probably also want phased, gt_bases
             calls.append(call_dict)
+
+            for k, v in samp.data:
+                if self._find_key('FORMAT', k) is None:
+                    self._add_key('FORMAT', k)
+                table, key_id = self._find_key('FORMAT', k)
+                if table == 'call':
+                    continue  # default keys already added
+                elif table == 'call_info':
+                    if isinstance(value, list):
+                        for item in value:
+                            extra_calls.append(dict(key=key_id, value=item))
+                    else:
+                        extra_calls.append(dict(key=key_id, value=value))
+
+             # TODO have to add site.id and sample.id to the dicts
 
         # XXX insert_many precludes arbitrary format (need id)
         # XXX unless I use and trust an internal row counter
