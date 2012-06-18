@@ -46,6 +46,13 @@ class VariantDB(object):
             ('misc', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
         ],
+        'sample': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('metadata', 'INTEGER'),
+            ('sample', 'TEXT'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+            ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
+        ],
         'site': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('metadata', 'INTEGER'),
@@ -90,7 +97,7 @@ class VariantDB(object):
         'call': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('site', 'INTEGER'),
-            ('name', 'TEXT'),
+            ('sample', 'INTEGER'),
             # reserved format keys from vcf 4.0 (GT must be first)
             ('GT', 'TEXT'),
             ('DP', 'INTEGER'),
@@ -100,15 +107,18 @@ class VariantDB(object):
             ('HQ2', 'INTEGER'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
+            ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
         ],
         'key': [
             ('id', 'INTEGER PRIMARY KEY'),
+            ('metadata', 'INTEGER'),
             ('scope', 'TEXT'),
             ('key', 'TEXT'),
             ('number', 'TEXT'),
             ('type', 'TEXT'),
             ('description', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+            ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
         ],
         'site_info': [
             ('id', 'INTEGER PRIMARY KEY'),

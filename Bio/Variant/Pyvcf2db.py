@@ -37,6 +37,14 @@ class Pyvcf2db(object):
         self.metadata = db.insert_commit(table='metadata',
                                   filename=filename, misc=file_data)
 
+        # Store sample info in db
+        samples = []
+        self.sample_indexes = {}
+        for id, sample in enumerate(self._parser.samples):
+            samples.append(dict(id=id, metadata=self.metadata, sample=sample))
+            self.sample_indexes[sample] = id
+        db.insert_many(table='sample', row_iter=samples)
+
         self.scopes = ("INFO", "FORMAT")
         # get INFO tags stored in site table
         # cols 0-7 are fixed; last 2 cols are date and FK
@@ -108,6 +116,7 @@ class Pyvcf2db(object):
         if scope not in self.scopes:
             raise TypeError("Unknown key scope '%s'" % scope)
         insert_dict = dict(
+            metadata = self.metadata,
             scope = scope,
             key = key_id,
             number = num,
@@ -223,7 +232,7 @@ class Pyvcf2db(object):
                 HQ1 = HQ2 = None
             call_dict = dict(
                 site = site_id,
-                name = samp.sample,
+                sample = samp.sample,
                 GT = samp.gt_nums,
                 DP = samp.data.get('DP'),
                 FT = samp.data.get('FT'),
