@@ -193,7 +193,7 @@ class Pyvcf2db(object):
             default_allele_infos[key] = row.INFO.get(key)
         for num, allele in enumerate(row.ALT):
             alt_dict = dict(
-                alt_id = num + 1,
+                alt_index = num + 1,
                 site = site_id,
                 alt = allele,
             )

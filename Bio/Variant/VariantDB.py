@@ -85,7 +85,7 @@ class VariantDB(object):
         ],
         'alt': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('alt_id', 'INTEGER'),
+            ('alt_index', 'INTEGER'),
             ('site', 'INTEGER'),
             ('alt', 'TEXT'),
             # reserved info keys that map better to allele (number=A)
@@ -129,24 +129,28 @@ class VariantDB(object):
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
+        # FIXME how to query this
         'alt_info': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('alt', 'INTEGER'),
-            ('call', 'INTEGER DEFAULT NULL'),
+            ('site', 'INTEGER'),
+            ('sample', 'INTEGER DEFAULT NULL'),
+            ('alt_index', 'INTEGER'),
             ('key', 'INTEGER'),
             ('value', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
-            ('FOREIGN KEY', '(alt) REFERENCES alt(id)'),
-            ('FOREIGN KEY', '(call) REFERENCES call(id)'),
+            ('FOREIGN KEY', '(site) REFERENCES site(id)'),
+            ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
         'call_format': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('call', 'INTEGER'),
+            ('site', 'INTEGER'),
+            ('sample', 'INTEGER'),
             ('key', 'INTEGER'),
             ('value', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
-            ('FOREIGN KEY', '(call) REFERENCES call(id)'),
+            ('FOREIGN KEY', '(site) REFERENCES site(id)'),
+            ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
             ('FOREIGN KEY', '(key) REFERENCES key(id)'),
         ],
     }
