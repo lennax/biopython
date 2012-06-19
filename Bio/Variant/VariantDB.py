@@ -263,10 +263,19 @@ class VariantSqlite(VariantDB):
                   file_filter=None, site_filter=None, call_filter=None):
         if file_filter is None:
             file_filter = 1
-        header = self.query('SELECT key, value FROM metadata WHERE file=%s' % file_filter)
+        metadata = self.query('SELECT key, value FROM metadata WHERE file=%s' % file_filter)
+        for result in metadata:
+            print "##%s=%s" % (result['key'], result['value'])
+        header = self.query('SELECT key, key_id, number, type, desc FROM default_keys WHERE file=%s' % file_filter)
         for result in header:
-            #print result['metadata']
-            pass
+            sub_list = [result['key'], result['key_id'], result['desc']]
+            if result['key'] in ("ALT", "FILTER"):
+                sub_str = '##{0!s}=<ID={1!s},Description="{2!s}">'
+            elif result['key'] in ("INFO", "FORMAT"):
+                sub_str = '##{0!s}=<ID={1!s},Number={3!s},Type={4!s},Description="{2!s}">'
+                sub_list.append(result['number'])
+                sub_list.append(result['type'])
+            print sub_str.format(*sub_list)
 
 
 if __name__ == "__main__":
@@ -281,6 +290,24 @@ if __name__ == "__main__":
         file=file_row,
         key="fileformat",
         value="VCFv4.0",
+    )
+    db.insert_commit(
+        table="default_keys",
+        file=file_row,
+        key="ALT",
+        key_id="DEL",
+        number=None,
+        type=None,
+        desc="Deletion"
+    )
+    db.insert_commit(
+        table="default_keys",
+        file=file_row,
+        key="FORMAT",
+        key_id="GT",
+        number=1,
+        type="String",
+        desc="Sample genotype"
     )
         #alts='{"DEL": ["DEL", "Deletion"]}',
         #filters=None,
