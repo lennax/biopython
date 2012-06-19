@@ -164,7 +164,6 @@ class VariantDB(object):
     def insert_row(self, table, **kwargs):
         """
         Insert a row into the table.
-        Set create_date and update_date to current datetime.
         Return id.
 
         """
@@ -188,6 +187,7 @@ class VariantSqlite(VariantDB):
 
     def __init__(self, dbname=None):
         """Connect to the database and create the tables."""
+        # Call parent constructor to create schema lists
         VariantDB.__init__(self, dbname=dbname)
         if dbname is None:
             dbname = "variant.db"
@@ -201,6 +201,8 @@ class VariantSqlite(VariantDB):
     def __del__(self):
         """Try to close the database connection"""
         try:
+            # Final commit to be sure
+            self.conn.commit()
             self.conn.close()
         except AttributeError:
             pass
@@ -217,11 +219,12 @@ class VariantSqlite(VariantDB):
         self.cursor.execute(insert_string, insert_dict)
 
     def insert_many(self, table, row_iter):
-        """Insert multiple rows; provide an iterable of dicts"""
+        """Insert multiple rows; provide an iterable of insert dicts"""
         insert_string = self.ins_stmt[table]
         self.cursor.executemany(insert_string, row_iter)
 
     def query(self, query):
+        """Run query on DB; return row factory."""
         self.conn.row_factory = sqlite3.Row
         self.cursor.execute(query)
         results = self.cursor.fetchall()
