@@ -1,7 +1,6 @@
 
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
-import json
 import sqlite3
 
 
@@ -67,14 +66,14 @@ class VariantDB(object):
         ],
         'sample': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('metadata', 'INTEGER'),
+            ('file', 'INTEGER'),
             ('sample', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
-            ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
+            ('FOREIGN KEY', '(file) REFERENCES file(id)'),
         ],
         'site': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('metadata', 'INTEGER'),
+            ('file', 'INTEGER'),
             ('chrom', 'TEXT'),
             ('pos', 'INTEGER'),
             ('site_id', 'TEXT'),
@@ -100,7 +99,7 @@ class VariantDB(object):
             ('H3', 'INTEGER'),  # bool
             ('THOUSANDG', 'INTEGER'),  # bool; == 1000G
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
-            ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
+            ('FOREIGN KEY', '(file) REFERENCES file(id)'),
         ],
         'alt': [
             ('id', 'INTEGER PRIMARY KEY'),
@@ -130,14 +129,14 @@ class VariantDB(object):
         ],
         'key': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('metadata', 'INTEGER'),
+            ('file', 'INTEGER'),
             ('scope', 'TEXT'),
             ('key', 'TEXT'),
             ('number', 'TEXT'),
             ('type', 'TEXT'),
             ('description', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
-            ('FOREIGN KEY', '(metadata) REFERENCES metadata(id)'),
+            ('FOREIGN KEY', '(file) REFERENCES file(id)'),
         ],
         'site_info': [
             ('id', 'INTEGER PRIMARY KEY'),
@@ -267,16 +266,19 @@ class VariantSqlite(VariantDB):
         header = self.query('SELECT key, value FROM metadata WHERE file=%s' % file_filter)
         for result in header:
             #print result['metadata']
-            #for key, value in json.loads(result['metadata']).iteritems():
-                #print key, value
             pass
 
 
 if __name__ == "__main__":
     db = VariantSqlite("test.db")
+    file_row = db.insert_commit(
+        table="file",
+        file="myfile",
+        parser="FakeParser",
+    )
     meta_row = db.insert_commit(
         table="metadata",
-        file="myfile",
+        file=file_row,
         key="fileformat",
         value="VCFv4.0",
     )
@@ -286,9 +288,10 @@ if __name__ == "__main__":
         #infos='{"": ["AC", null, "Integer", "Allele count in genotypes, for each ALT allele, in the same order as listed"]}',
         #metadata='{"fileformat": "VCFv4.0", "contig": "<ID=chrY,length=39584842,assembly=hg19>"}',
     #)
+    
     site_row = db.insert_commit(
         table="site",
-        metadata=meta_row,
+        file=file_row,
         chrom=2,
         pos=12324,
         site_id="ggsgdg",

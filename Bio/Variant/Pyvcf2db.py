@@ -1,9 +1,7 @@
-import json
-
-try:
-    from cyvcf import Reader, Writer
-except ImportError:
-    from vcf import Reader, Writer
+#try:
+    #from cyvcf import Reader, Writer
+#except ImportError:
+from vcf import Reader, Writer
 
 from VariantDB import VariantSqlite
 
@@ -27,25 +25,38 @@ class Pyvcf2db(object):
                              prepend_chr=prepend_chr)
 
         # Store file info in db
-        # TODO remove json
-        #file_data = dict(
-            #filters = self._parser.filters,
-            #formats = self._parser.formats,
-            #infos = self._parser.infos,
-            #metadata = self._parser.metadata,
-        #)
-        file_data = {}
-        for header in ('filters', 'formats', 'infos', 'metadata'):
-            file_data[header] = json.dumps(getattr(self._parser, header))
-        self.metadata = db.insert_commit(table='metadata',
-                                  filename=filename, **file_data)
+        self.file_id = db.insert_commit(table='file',
+                                        file=filename, parser="PyVCF")
+
+        # Store default metadata keys in db
+        vcf_keys = ('ALT', 'FILTER', 'FORMAT', 'INFO')
+        default_keys = []
+        for header in vcf_keys:
+            pyvcf_key = "".join((header.lower(), "s"))
+            header_dict = getattr(self._parser, pyvcf_key)
+            for field in header_dict.itervalues():
+                default_keys.append(dict(file=self.file_id,
+                                         key=header,
+                                         key_id = getattr(field, 'id', None),
+                                         desc = getattr(field, 'desc', None),
+                                         number = getattr(field, 'num', None),
+                                         type = getattr(field, 'type', None)))
+
+        db.insert_many(table='default_keys', row_iter=default_keys)
+
+        # Store misc metadata keys in db
+        metadatas = []
+        for key, value in self._parser.metadata.iteritems():
+            metadatas.append(dict(file=self.file_id, key=key, value=value))
+
+        db.insert_many(table='metadata', row_iter=metadatas)
 
         # Store sample info in db
         samples = []
         self.sample_indexes = {}
         for index, sample in enumerate(self._parser.samples):
             sql_id = index + 1
-            samples.append(dict(id=sql_id, metadata=self.metadata, 
+            samples.append(dict(id=sql_id, file=self.file_id, 
                                 sample=sample))
             self.sample_indexes[sample] = sql_id
         db.insert_many(table='sample', row_iter=samples)
@@ -121,7 +132,7 @@ class Pyvcf2db(object):
         if scope not in self.scopes:
             raise TypeError("Unknown key scope '%s'" % scope)
         insert_dict = dict(
-            metadata = self.metadata,
+            file = self.file_id,
             scope = scope,
             key = key_id,
             number = num,
@@ -148,7 +159,7 @@ class Pyvcf2db(object):
         """
         # Organize and insert site/row/record info
         site_dict = dict(
-            metadata = self.metadata,
+            file = self.file_id,
             chrom = row.CHROM,
             pos = row.POS,
             site_id = row.ID,
