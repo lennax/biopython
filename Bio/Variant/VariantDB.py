@@ -260,13 +260,13 @@ class VariantSqlite(VariantDB):
         return results
 
     def write_vcf(self, filepath,
-                  file_filter=None, site_filter=None, call_filter=None):
-        if file_filter is None:
-            file_filter = 1
-        metadata = self.query('SELECT key, value FROM metadata WHERE file=%s' % file_filter)
+                  file_id=None, site_filter=None, call_filter=None):
+        if file_id is None:
+            file_id = 1
+        metadata = self.query('SELECT key, value FROM metadata WHERE file={0}'.format(file_id))
         for result in metadata:
             print "##%s=%s" % (result['key'], result['value'])
-        header = self.query('SELECT key, key_id, number, type, desc FROM default_keys WHERE file=%s' % file_filter)
+        header = self.query('SELECT key, key_id, number, type, desc FROM default_keys WHERE file={0}'.format(file_id))
         for result in header:
             sub_list = [result['key'], result['key_id'], result['desc']]
             if result['key'] in ("ALT", "FILTER"):
@@ -276,6 +276,13 @@ class VariantSqlite(VariantDB):
                 sub_list.append(result['number'])
                 sub_list.append(result['type'])
             print sub_str.format(*sub_list)
+
+        vcf_header = "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT".split()
+        sample_q = self.query('SELECT sample FROM sample WHERE file={0}'.format(file_id))
+        samples = [r['sample'] for r in sample_q]
+        print "\t".join(vcf_header + samples)
+
+
 
 
 if __name__ == "__main__":
@@ -316,6 +323,7 @@ if __name__ == "__main__":
         #metadata='{"fileformat": "VCFv4.0", "contig": "<ID=chrY,length=39584842,assembly=hg19>"}',
     #)
     
+    db.insert_commit(table='sample', file=file_row, sample="NA001")
     site_row = db.insert_commit(
         table="site",
         file=file_row,
