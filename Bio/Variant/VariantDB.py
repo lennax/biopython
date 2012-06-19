@@ -269,7 +269,7 @@ if __name__ == "__main__":
     call_row = db.insert_row(
         table="call",
         site=site_row,
-        name="NA001",
+        sample=1,
         GT="0|0",
         DP=2,
         FT=None,
