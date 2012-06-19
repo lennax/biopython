@@ -40,15 +40,30 @@ class VariantDB(object):
 
     # schema definitions
     schema = {
+        'file': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('file', 'TEXT'),
+            ('parser', 'TEXT'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+        ],
+        'default_keys': [
+            ('id', 'INTEGER PRIMARY KEY'),
+            ('file', 'INTEGER'),
+            ('key', 'TEXT'),
+            ('key_id', 'TEXT'),
+            ('number', 'TEXT'),
+            ('type', 'TEXT'),
+            ('desc', 'TEXT'),
+            ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+            ('FOREIGN KEY', '(file) REFERENCES file(id)'),
+        ],
         'metadata': [
             ('id', 'INTEGER PRIMARY KEY'),
-            ('filename', 'TEXT'),
-            ('alts', 'TEXT'),
-            ('filters', 'TEXT'),
-            ('formats', 'TEXT'),
-            ('infos', 'TEXT'),
-            ('metadata', 'TEXT'),
+            ('file', 'INTEGER'),
+            ('key', 'TEXT'),
+            ('value', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+            ('FOREIGN KEY', '(file) REFERENCES file(id)'),
         ],
         'sample': [
             ('id', 'INTEGER PRIMARY KEY'),
@@ -249,22 +264,28 @@ class VariantSqlite(VariantDB):
                   file_filter=None, site_filter=None, call_filter=None):
         if file_filter is None:
             file_filter = 1
-        header = self.query('SELECT filters, formats, infos, metadata FROM metadata WHERE id=%s' % file_filter)
+        header = self.query('SELECT key, value FROM metadata WHERE file=%s' % file_filter)
         for result in header:
-            print result['metadata']
+            #print result['metadata']
+            #for key, value in json.loads(result['metadata']).iteritems():
+                #print key, value
+            pass
 
 
 if __name__ == "__main__":
     db = VariantSqlite("test.db")
     meta_row = db.insert_commit(
         table="metadata",
-        filename="myfile",
-        alts='{"DEL": ["DEL", "Deletion"]}',
-        filters=None,
-        formats='{"GT": ["GT", 1, "String", "Genotype"]}',
-        infos='{"": ["AC", null, "Integer", "Allele count in genotypes, for each ALT allele, in the same order as listed"]}',
-        metadata='{"fileformat": "VCFv4.0", "contig": "<ID=chrY,length=39584842,assembly=hg19>"}',
+        file="myfile",
+        key="fileformat",
+        value="VCFv4.0",
     )
+        #alts='{"DEL": ["DEL", "Deletion"]}',
+        #filters=None,
+        #formats='{"GT": ["GT", 1, "String", "Genotype"]}',
+        #infos='{"": ["AC", null, "Integer", "Allele count in genotypes, for each ALT allele, in the same order as listed"]}',
+        #metadata='{"fileformat": "VCFv4.0", "contig": "<ID=chrY,length=39584842,assembly=hg19>"}',
+    #)
     site_row = db.insert_commit(
         table="site",
         metadata=meta_row,
