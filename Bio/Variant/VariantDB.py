@@ -43,6 +43,7 @@ class VariantDB(object):
         'metadata': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('filename', 'TEXT'),
+            ('alts', 'TEXT'),
             ('filters', 'TEXT'),
             ('formats', 'TEXT'),
             ('infos', 'TEXT'),
@@ -181,6 +182,15 @@ class VariantDB(object):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def write_vcf(self, filepath,
+                  file_filter=None, site_filter=None, call_filter=None):
+        """
+        Write from DB to VCF.
+
+        """
+        raise NotImplementedError
+
 
 class VariantSqlite(VariantDB):
     """
@@ -231,9 +241,15 @@ class VariantSqlite(VariantDB):
         self.conn.row_factory = sqlite3.Row
         self.cursor.execute(query)
         results = self.cursor.fetchall()
-        for row in results:
-            print row
+        #for row in results:
+            #print row
+        return results
 
+    def write_vcf(self, filepath,
+                  file_filter=None, site_filter=None, call_filter=None):
+        if file_filter is None:
+            file_filter = 1
+        header = self.query('SELECT filters, formats, infos, metadata FROM metadata WHERE id=%s' % file_filter)
 
 
 if __name__ == "__main__":
@@ -241,7 +257,11 @@ if __name__ == "__main__":
     meta_row = db.insert_commit(
         table="metadata",
         filename="myfile",
-        misc=json.dumps(dict(FORMATS="blahblah", INFOS="bloobloo"))
+        alts='{"DEL": ["DEL", "Deletion"]}',
+        filters=None,
+        formats='{"GT": ["GT", 1, "String", "Genotype"]}',
+        infos='{"": ["AC", null, "Integer", "Allele count in genotypes, for each ALT allele, in the same order as listed"]}',
+        metadata='{"fileformat": "VCFv4.0", "contig": "<ID=chrY,length=39584842,assembly=hg19>"}',
     )
     site_row = db.insert_commit(
         table="site",
@@ -286,3 +306,5 @@ if __name__ == "__main__":
     print "call", call_row
 
     db.query("SELECT site.chrom, site.pos, call.GT FROM site, call WHERE site.id = call.site")
+
+    db.write_vcf(filepath="test.vcf")
