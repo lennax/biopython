@@ -28,14 +28,17 @@ class Pyvcf2db(object):
 
         # Store file info in db
         # TODO remove json
-        file_data = json.dumps(dict(
-            filters = self._parser.filters,
-            formats = self._parser.formats,
-            infos = self._parser.infos,
-            metadata = self._parser.metadata,
-        ))
+        #file_data = dict(
+            #filters = self._parser.filters,
+            #formats = self._parser.formats,
+            #infos = self._parser.infos,
+            #metadata = self._parser.metadata,
+        #)
+        file_data = {}
+        for header in ('filters', 'formats', 'infos', 'metadata'):
+            file_data[header] = json.dumps(getattr(self._parser, header))
         self.metadata = db.insert_commit(table='metadata',
-                                  filename=filename, misc=file_data)
+                                  filename=filename, **file_data)
 
         # Store sample info in db
         samples = []
@@ -286,4 +289,4 @@ if __name__ == "__main__":
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
     #parser.parse_next()
-    parser.parse_all()
+    #parser.parse_all()

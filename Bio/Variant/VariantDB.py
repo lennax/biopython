@@ -43,7 +43,10 @@ class VariantDB(object):
         'metadata': [
             ('id', 'INTEGER PRIMARY KEY'),
             ('filename', 'TEXT'),
-            ('misc', 'TEXT'),
+            ('filters', 'TEXT'),
+            ('formats', 'TEXT'),
+            ('infos', 'TEXT'),
+            ('metadata', 'TEXT'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
         ],
         'sample': [
