@@ -205,6 +205,7 @@ class VariantSqlite(VariantDB):
         if dbname is None:
             dbname = "variant.db"
         self.conn = sqlite3.connect(dbname)
+        self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
         self.cursor.execute("PRAGMA synchronous=OFF")
         for stmt in self.create_stmt.values():
@@ -238,7 +239,6 @@ class VariantSqlite(VariantDB):
 
     def query(self, query):
         """Run query on DB; return row factory."""
-        self.conn.row_factory = sqlite3.Row
         self.cursor.execute(query)
         results = self.cursor.fetchall()
         #for row in results:
@@ -250,6 +250,8 @@ class VariantSqlite(VariantDB):
         if file_filter is None:
             file_filter = 1
         header = self.query('SELECT filters, formats, infos, metadata FROM metadata WHERE id=%s' % file_filter)
+        for result in header:
+            print result['metadata']
 
 
 if __name__ == "__main__":
