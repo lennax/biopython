@@ -40,9 +40,11 @@ class Pyvcf2db(object):
         # Store sample info in db
         samples = []
         self.sample_indexes = {}
-        for id, sample in enumerate(self._parser.samples):
-            samples.append(dict(id=id, metadata=self.metadata, sample=sample))
-            self.sample_indexes[sample] = id
+        for index, sample in enumerate(self._parser.samples):
+            sql_id = index + 1
+            samples.append(dict(id=sql_id, metadata=self.metadata, 
+                                sample=sample))
+            self.sample_indexes[sample] = sql_id
         db.insert_many(table='sample', row_iter=samples)
 
         self.scopes = ("INFO", "FORMAT")
