@@ -167,11 +167,12 @@ class Pyvcf2db(object):
             if table == 'site':
                 continue  # default keys already added
             elif table == 'site_info':
+                base = {'key': key_id}
                 if isinstance(value, list):
                     for item in value:
-                        extra_sites.append(dict(key=key_id, value=item))
+                        extra_sites.append(dict(base, value=item))
                 else:
-                    extra_sites.append(dict(key=key_id, value=value))
+                    extra_sites.append(dict(base, value=value))
             else:
                 # FIXME 1. can an INFO ever be G?
                 # 2. How to get A to allele?
@@ -231,9 +232,11 @@ class Pyvcf2db(object):
                 HQ1, HQ2 = HQ
             except TypeError:
                 HQ1 = HQ2 = None
+            # Retrieve sample index
+            sample_id = self.sample_indexes[samp.sample]
             call_dict = dict(
                 site = site_id,
-                sample = samp.sample,
+                sample = sample_id,
                 GT = samp.gt_nums,
                 DP = samp.data.get('DP'),
                 FT = samp.data.get('FT'),
@@ -244,18 +247,19 @@ class Pyvcf2db(object):
             # FIXME probably also want phased, gt_bases
             calls.append(call_dict)
 
-            for k, v in samp.data:
-                if self._find_key('FORMAT', k) is None:
-                    self._add_key('FORMAT', k)
-                table, key_id = self._find_key('FORMAT', k)
+            for samp_k, samp_v in samp.data.iteritems():
+                if self._find_key('FORMAT', samp_k) is None:
+                    self._add_key('FORMAT', samp_k)
+                table, key_id = self._find_key('FORMAT', samp_k)
                 if table == 'call':
                     continue  # default keys already added
-                elif table == 'call_info':
-                    if isinstance(value, list):
-                        for item in value:
-                            extra_calls.append(dict(key=key_id, value=item))
+                elif table == 'call_format':
+                    base = {'site': site_id, 'sample': sample_id, 'key': key_id}
+                    if isinstance(samp_v, list):
+                        for item in samp_v:
+                            extra_calls.append(dict(base, value=item))
                     else:
-                        extra_calls.append(dict(key=key_id, value=value))
+                        extra_calls.append(dict(base, value=samp_v))
 
              # TODO have to add site.id and sample.id to the dicts
 
@@ -264,6 +268,7 @@ class Pyvcf2db(object):
         #     or make samples table (e.g. id=1 sampname=NA0001)
         #     and have call_format use site and sampname instead of call id
         db.insert_many(table='call', row_iter=calls)
+        db.insert_many(table='call_format', row_iter = extra_calls)
 
 
 if __name__ == "__main__":
