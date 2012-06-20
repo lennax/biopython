@@ -36,7 +36,7 @@ class Pyvcf2db(object):
             header_dict = getattr(self._parser, pyvcf_key)
             for field in header_dict.itervalues():
                 default_keys.append(dict(file=self.file_id,
-                                         key=header,
+                                         key=header.upper(),
                                          key_id = getattr(field, 'id', None),
                                          desc = getattr(field, 'desc', None),
                                          number = getattr(field, 'num', None),
@@ -62,6 +62,7 @@ class Pyvcf2db(object):
         db.insert_many(table='sample', row_iter=samples)
 
         self.scopes = ("info", "format")
+        self.table_n = {'info': 'site', 'format': 'call'}
         # get INFO tags stored in site table
         # cols 0-7 are fixed; last 2 cols are date and FK
         self.info_cols = [col[0] for col in self.db.schema['site'][8:-2]]
@@ -70,17 +71,10 @@ class Pyvcf2db(object):
         self.format_cols = [col[0] for col in self.db.schema['call'][3:-2]]
         # Init empty dicts for storing arbitrary keys
         for scope in self.scopes:
-            for dict_name in ("extra_%s", "%s_A", "%s_G"):
-                setattr(self, dict_name % scope, {})
+            for dict_name in ("extra_{0}", "{0}_A", "{0}_G"):
+                setattr(self, dict_name.format(scope), {})
         # Store reserved A keys
         self.default_info_A = ['AC', 'AF']
-        # Associate key lists with tables
-        # FIXME this is still kind of nasty; tied to _find_key
-        self.info_tables = dict(default_keys='site', new_keys='site_info',
-                                A_keys='alt', G_keys='')  # FIXME
-        self.format_tables = dict(default_keys='call',
-                                  new_keys='call_format',
-                                  A_keys='', G_keys='')  # FIXME
 
         # Scan header ##INFO and ##FORMAT lines for new keys
         self._scan_headers()
@@ -112,18 +106,23 @@ class Pyvcf2db(object):
         """Look for key; if found return table, else None"""
         if scope not in self.scopes:
             raise TypeError("Unknown key scope '%s'" % scope)
+
         key_lists = {
-            'default_keys': getattr(self, "%s_cols" % scope),
-            'new_keys': getattr(self, "extra_%s" % scope),
-            'A_keys': getattr(self, "%s_A" % scope),
-            'G_keys': getattr(self, "%s_G" % scope),
+            '{0}'.format(self.table_n[scope]): '{0}_cols'.format(scope),
+            '{0}_{1}'.format(self.table_n[scope], scope): 'extra_{0}'.format(scope),
+            'alt_{0}'.format(scope): '{0}_A'.format(scope),
+            'genotype_{0}'.format(scope): '{0}_G'.format(scope),
         }
-        tables = getattr(self, "%s_tables" % scope)
-        for name, key_list in key_lists.iteritems():
+        if scope == "info":
+            key_lists['alt'] = 'default_info_A'
+
+        for name, list_name in key_lists.iteritems():
+            # Retrieve the key list
+            key_list = getattr(self, list_name)
             if key in key_list:
-                if name == 'default_keys':
-                    return (tables[name], None)
-                return (tables[name], key_list[key])
+                if "_" not in name:  # table is default
+                    return (name, None)
+                return (name, key_list[key])
         else:  # key was not found on any list
             return None
 
