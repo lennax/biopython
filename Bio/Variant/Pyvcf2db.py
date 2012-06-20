@@ -29,10 +29,10 @@ class Pyvcf2db(object):
                                         file=filename, parser="PyVCF")
 
         # Store default metadata keys in db
-        vcf_keys = ('ALT', 'FILTER', 'FORMAT', 'INFO')
+        vcf_keys = ('alt', 'filter', 'format', 'info')
         default_keys = []
         for header in vcf_keys:
-            pyvcf_key = "".join((header.lower(), "s"))
+            pyvcf_key = "".join((header, "s"))
             header_dict = getattr(self._parser, pyvcf_key)
             for field in header_dict.itervalues():
                 default_keys.append(dict(file=self.file_id,
@@ -61,24 +61,24 @@ class Pyvcf2db(object):
             self.sample_indexes[sample] = sql_id
         db.insert_many(table='sample', row_iter=samples)
 
-        self.scopes = ("INFO", "FORMAT")
+        self.scopes = ("info", "format")
         # get INFO tags stored in site table
         # cols 0-7 are fixed; last 2 cols are date and FK
-        self.INFO_cols = [col[0] for col in self.db.schema['site'][8:-2]]
+        self.info_cols = [col[0] for col in self.db.schema['site'][8:-2]]
         # get FORMAT tags stored in call table
         # cols 0-2 are fixed; last 2 cols are date and FK
-        self.FORMAT_cols = [col[0] for col in self.db.schema['call'][3:-2]]
+        self.format_cols = [col[0] for col in self.db.schema['call'][3:-2]]
         # Init empty dicts for storing arbitrary keys
         for scope in self.scopes:
             for dict_name in ("extra_%s", "%s_A", "%s_G"):
                 setattr(self, dict_name % scope, {})
         # Store reserved A keys
-        self.default_INFO_A = ['AC', 'AF']
+        self.default_info_A = ['AC', 'AF']
         # Associate key lists with tables
         # FIXME this is still kind of nasty; tied to _find_key
-        self.INFO_tables = dict(default_keys='site', new_keys='site_info',
+        self.info_tables = dict(default_keys='site', new_keys='site_info',
                                 A_keys='alt', G_keys='')  # FIXME
-        self.FORMAT_tables = dict(default_keys='call',
+        self.format_tables = dict(default_keys='call',
                                   new_keys='call_format',
                                   A_keys='', G_keys='')  # FIXME
 
@@ -102,7 +102,7 @@ class Pyvcf2db(object):
 
     def _scan_headers(self):
         for scope in self.scopes:
-            key_iter = getattr(self._parser, "%ss" % scope.lower()).itervalues()
+            key_iter = getattr(self._parser, "%ss" % scope).itervalues()
             for field in key_iter:
                 if self._find_key(scope, field.id) is None:
                     self._add_key(scope, *field)
@@ -169,7 +169,7 @@ class Pyvcf2db(object):
         )
 
         # Set default site info keys
-        for key in self.INFO_cols:
+        for key in self.info_cols:
             # get() will set missing to None
             site_dict[key] = row.INFO.get(key)
 
@@ -178,9 +178,9 @@ class Pyvcf2db(object):
         # Loop through keys in file
         # FIXME AF is getting put into site_info
         for key, value in row.INFO.iteritems():
-            if self._find_key('INFO', key) is None:
-                self._add_key('INFO', key)
-            table, key_id = self._find_key('INFO', key)
+            if self._find_key('info', key) is None:
+                self._add_key('info', key)
+            table, key_id = self._find_key('info', key)
             if table == 'site':
                 continue  # default keys already added
             elif table == 'site_info':
@@ -191,7 +191,7 @@ class Pyvcf2db(object):
                 else:
                     extra_sites.append(dict(base, value=value))
             else:
-                # FIXME 1. can an INFO ever be G?
+                # XXX 1. can an INFO ever be G?
                 # 2. How to get A to allele?
                 pass
 
@@ -207,7 +207,7 @@ class Pyvcf2db(object):
         alleles = []
         # Dict for default INFOs that are per-A
         default_allele_infos = {}
-        for key in self.default_INFO_A:
+        for key in self.default_info_A:
             default_allele_infos[key] = row.INFO.get(key)
         for num, allele in enumerate(row.ALT):
             alt_dict = dict(
@@ -216,7 +216,7 @@ class Pyvcf2db(object):
                 alt = str(allele),
             )
             # Set default per-A values
-            for key in self.default_INFO_A:
+            for key in self.default_info_A:
                 value = default_allele_infos[key]
                 try:
                     alt_dict[key] = value[num]
@@ -231,7 +231,7 @@ class Pyvcf2db(object):
         #       unless I change the alt FK in alt_info to be alt_id
         #       makes joins a little uglier but insert easier
         allele_infos = {}
-        for key in self.INFO_A.iterkeys():
+        for key in self.info_A.iterkeys():
             allele_infos[key] = row.INFO.get(key)
 
 
@@ -266,9 +266,9 @@ class Pyvcf2db(object):
             calls.append(call_dict)
 
             for samp_k, samp_v in samp.data.iteritems():
-                if self._find_key('FORMAT', samp_k) is None:
-                    self._add_key('FORMAT', samp_k)
-                table, key_id = self._find_key('FORMAT', samp_k)
+                if self._find_key('format', samp_k) is None:
+                    self._add_key('format', samp_k)
+                table, key_id = self._find_key('format', samp_k)
                 if table == 'call':
                     continue  # default keys already added
                 elif table == 'call_format':
