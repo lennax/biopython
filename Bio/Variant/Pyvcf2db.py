@@ -212,7 +212,7 @@ class Pyvcf2db(object):
             alt_dict = dict(
                 alt_index = num + 1,
                 site = site_id,
-                alt = allele,
+                alt = str(allele),
             )
             # Set default per-A values
             for key in self.default_INFO_A:
@@ -300,4 +300,4 @@ if __name__ == "__main__":
     db = VariantSqlite("vcftest.db")
     parser = Pyvcf2db(database=db, filename=filename, compressed=compressed)
     #parser.parse_next()
-    #parser.parse_all()
+    parser.parse_all()
