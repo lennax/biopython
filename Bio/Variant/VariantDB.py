@@ -283,13 +283,22 @@ class VariantSqlite(VariantDB):
         print "\t".join(vcf_header + samples)
 
         site_cols = [c[0] for c in self.schema['site'][2:-2]]
+        call_cols = [c[0] for c in self.schema['call'][3:-3]]
         site_q = self.query('SELECT id, {0} FROM site WHERE file={1}'.format(', '.join(site_cols), file_id))
-        for row in site_q:
+        for site_row in site_q:
             # FIXME need to differentiate between missing and "." in the file
-            print row
-            site_info_q = self.query('SELECT key, value FROM site_info WHERE site={0}'.format(row['id']))
+            print site_row
+            site_info_q = self.query('SELECT key.key, site_info.value FROM key, site_info WHERE site={0} and site_info.key=key.id'.format(site_row['id']))
             for info in site_info_q:
                 print info
+
+            call_q = self.query('SELECT sample, {0} FROM call WHERE site={1}'.format(', '.join(call_cols), site_row['id']))
+            for call_row in call_q:
+                print call_row
+                call_fmt_q = self.query('SELECT key.key, call_format.value FROM key, call_format WHERE site={0} AND sample={1} AND call_format.key = key.id'.format(site_row['id'], call_row['sample']))
+                for fmt in call_fmt_q:
+                    print fmt
+
 
 
 if __name__ == "__main__":
@@ -377,5 +386,5 @@ if __name__ == "__main__":
     for row in test_query:
         print row
 
-    test_write = VariantSqlite('walk.db')
+    test_write = VariantSqlite('walk.db')  # small output from walk_left.vcf
     test_write.write_vcf(filepath = 'walk.vcf')

@@ -176,6 +176,7 @@ class Pyvcf2db(object):
         # Organize extra site info
         extra_sites = []
         # Loop through keys in file
+        # FIXME AF is getting put into site_info
         for key, value in row.INFO.iteritems():
             if self._find_key('INFO', key) is None:
                 self._add_key('INFO', key)
@@ -240,6 +241,7 @@ class Pyvcf2db(object):
         extra_calls = []
         for samp in row.samples:
             # Don't insert genotype that wasn't called XXX ?
+            # FIXME for roundtrip need to insert something
             if samp.called == False:
                 continue
             # Divide HQ pair or set to None
