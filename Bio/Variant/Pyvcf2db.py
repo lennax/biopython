@@ -243,16 +243,12 @@ class Pyvcf2db(object):
             # FIXME for roundtrip need to insert something
             if samp.called == False:
                 continue
+
             # Retrieve sample index
             smp_id = self.sample_indexes[samp.sample]
-            call_dict = dict(
-                site = site_id,
-                sample = smp_id,
-                GT = samp.gt_nums,
-                DP = samp.data.get('DP'),
-                FT = samp.data.get('FT'),
-                GQ = samp.data.get('GQ'),
-            )
+            call_dict = {'site': site_id, 'sample': smp_id}
+            for item in ('GT', 'DP', 'FT', 'GQ'):
+                call_dict[item] = samp.data.get(item)
             # FIXME probably also want phased, gt_bases
             calls.append(call_dict)
 

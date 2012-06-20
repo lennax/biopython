@@ -261,21 +261,33 @@ class VariantSqlite(VariantDB):
                   file_id=None, site_filter=None, call_filter=None):
         if file_id is None:
             file_id = 1
-        metadata = self.query('SELECT key, value FROM metadata \
-                              WHERE file={0}'.format(file_id))
+        metadata_qs = 'SELECT key, value FROM metadata WHERE file={0}'
+        metadata = self.query(metadata_qs.format(file_id))
         for result in metadata:
             print "##%s=%s" % (result['key'], result['value'])
-        header = self.query('SELECT key, key_id, number, type, desc \
-                            FROM default_keys WHERE file={0}'.format(file_id))
+
+        h_qs = 'SELECT key, key_id, number, type, desc FROM default_keys \
+                WHERE file={0}'
+        header = self.query(h_qs.format(file_id))
+
+        def swap_num(result):
+            old = result['number']
+            numbers = {'-2': 'G', '-1': 'A', None: '.'}
+            if old in numbers:
+                return numbers[old]
+            else:
+                return int(old)
+
+        sub_list = ['##{0[key]!s}=<ID={0[key_id]!s},',
+                       'Description="{0[desc]!s}">']
+        short_str = "".join(sub_list)
+        sub_list.insert(1, 'Number={1!s},Type={0[type]!s},')
+        long_str = "".join(sub_list)
+        sub_strs = {"INFO": long_str, "FORMAT": long_str,
+                    "ALT": short_str, "FILTER": short_str}
         for result in header:
-            sub_str_l = [
-                '##{0[key]!s}=<ID={0[key_id]!s},',
-                'Description="{0[desc]!s}">',
-            ]
-            if result['key'] in ("INFO", "FORMAT"):
-                sub_str_l.insert(1, 'Number={0[number]!s},Type={0[type]!s},')
-            sub_str = "".join(sub_str_l)
-            print sub_str.format(result)
+            sub_str = sub_strs[result['key']]
+            print sub_str.format(result, swap_num(result))
 
         vcf_header = "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT".split()
         sample_qs = 'SELECT sample FROM sample WHERE file={0}'
