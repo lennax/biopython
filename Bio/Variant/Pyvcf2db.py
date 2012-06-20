@@ -56,7 +56,7 @@ class Pyvcf2db(object):
         self.sample_indexes = {}
         for index, sample in enumerate(self._parser.samples):
             sql_id = index + 1
-            samples.append(dict(id=sql_id, file=self.file_id, 
+            samples.append(dict(id=sql_id, file=self.file_id,
                                 sample=sample))
             self.sample_indexes[sample] = sql_id
         db.insert_many(table='sample', row_iter=samples)
@@ -107,9 +107,10 @@ class Pyvcf2db(object):
         if scope not in self.scopes:
             raise TypeError("Unknown key scope '%s'" % scope)
 
+        table = self.table_n[scope]
         key_lists = {
-            '{0}'.format(self.table_n[scope]): '{0}_cols'.format(scope),
-            '{0}_{1}'.format(self.table_n[scope], scope): 'extra_{0}'.format(scope),
+            table: '{0}_cols'.format(scope),
+            '{0}_{1}'.format(table, scope): 'extra_{0}'.format(scope),
             'alt_{0}'.format(scope): '{0}_A'.format(scope),
             'genotype_{0}'.format(scope): '{0}_G'.format(scope),
         }
@@ -233,7 +234,6 @@ class Pyvcf2db(object):
         for key in self.info_A.iterkeys():
             allele_infos[key] = row.INFO.get(key)
 
-
         # Organize and insert call/genotype info
         # TODO handle arbitrary ##FORMAT
         calls = []
@@ -250,10 +250,10 @@ class Pyvcf2db(object):
             except TypeError:
                 HQ1 = HQ2 = None
             # Retrieve sample index
-            sample_id = self.sample_indexes[samp.sample]
+            smp_id = self.sample_indexes[samp.sample]
             call_dict = dict(
                 site = site_id,
-                sample = sample_id,
+                sample = smp_id,
                 GT = samp.gt_nums,
                 DP = samp.data.get('DP'),
                 FT = samp.data.get('FT'),
@@ -267,11 +267,11 @@ class Pyvcf2db(object):
             for samp_k, samp_v in samp.data.iteritems():
                 if self._find_key('format', samp_k) is None:
                     self._add_key('format', samp_k)
-                table, key_id = self._find_key('format', samp_k)
+                table, k_id = self._find_key('format', samp_k)
                 if table == 'call':
                     continue  # default keys already added
                 elif table == 'call_format':
-                    base = {'site': site_id, 'sample': sample_id, 'key': key_id}
+                    base = {'site': site_id, 'sample': smp_id, 'key': k_id}
                     if isinstance(samp_v, list):
                         for item in samp_v:
                             extra_calls.append(dict(base, value=item))

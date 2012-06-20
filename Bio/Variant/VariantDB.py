@@ -263,42 +263,52 @@ class VariantSqlite(VariantDB):
                   file_id=None, site_filter=None, call_filter=None):
         if file_id is None:
             file_id = 1
-        metadata = self.query('SELECT key, value FROM metadata WHERE file={0}'.format(file_id))
+        metadata = self.query('SELECT key, value FROM metadata \
+                              WHERE file={0}'.format(file_id))
         for result in metadata:
             print "##%s=%s" % (result['key'], result['value'])
-        header = self.query('SELECT key, key_id, number, type, desc FROM default_keys WHERE file={0}'.format(file_id))
+        header = self.query('SELECT key, key_id, number, type, desc \
+                            FROM default_keys WHERE file={0}'.format(file_id))
         for result in header:
-            sub_list = [result['key'], result['key_id'], result['desc']]
-            if result['key'] in ("ALT", "FILTER"):
-                sub_str = '##{0!s}=<ID={1!s},Description="{2!s}">'
-            elif result['key'] in ("INFO", "FORMAT"):
-                sub_str = '##{0!s}=<ID={1!s},Number={3!s},Type={4!s},Description="{2!s}">'
-                sub_list.append(result['number'])
-                sub_list.append(result['type'])
-            print sub_str.format(*sub_list)
+            sub_str_l = [
+                '##{0[key]!s}=<ID={0[key_id]!s},',
+                'Description="{0[desc]!s}">',
+            ]
+            if result['key'] in ("INFO", "FORMAT"):
+                sub_str_l.insert(1, 'Number={0[number]!s},Type={0[type]!s},')
+            sub_str = "".join(sub_str_l)
+            print sub_str.format(result)
 
         vcf_header = "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT".split()
-        sample_q = self.query('SELECT sample FROM sample WHERE file={0}'.format(file_id))
+        sample_qs = 'SELECT sample FROM sample WHERE file={0}'
+        sample_q = self.query(sample_qs.format(file_id))
         samples = [r['sample'] for r in sample_q]
         print "\t".join(vcf_header + samples)
 
         site_cols = [c[0] for c in self.schema['site'][2:-2]]
         call_cols = [c[0] for c in self.schema['call'][3:-3]]
-        site_q = self.query('SELECT id, {0} FROM site WHERE file={1}'.format(', '.join(site_cols), file_id))
+        site_q = self.query('SELECT id, {0} FROM site WHERE \
+                            file={1}'.format(', '.join(site_cols), file_id))
         for site_row in site_q:
             # FIXME need to differentiate between missing and "." in the file
             print site_row
-            site_info_q = self.query('SELECT key.key, site_info.value FROM key, site_info WHERE site={0} and site_info.key=key.id'.format(site_row['id']))
+            si_qs = 'SELECT k.key, si.value FROM key AS k, site_info AS si \
+                    WHERE si.site={0} AND si.key=k.id'
+            site_info_q = self.query(si_qs.format(site_row['id']))
             for info in site_info_q:
                 print info
 
-            call_q = self.query('SELECT sample, {0} FROM call WHERE site={1}'.format(', '.join(call_cols), site_row['id']))
+            call_qs = 'SELECT sample, {0} FROM call WHERE site={1}'
+            call_q = self.query(call_qs.format(', '.join(call_cols),
+                                               site_row['id']))
             for call_row in call_q:
                 print call_row
-                call_fmt_q = self.query('SELECT key.key, call_format.value FROM key, call_format WHERE site={0} AND sample={1} AND call_format.key = key.id'.format(site_row['id'], call_row['sample']))
+                c_qs = 'SELECT k.key, c.value FROM key AS k, call_format AS c \
+                      WHERE c.site={0} AND c.sample={1} AND c.key = k.id'
+                call_fmt_q = self.query(c_qs.format(site_row['id'],
+                                                    call_row['sample']))
                 for fmt in call_fmt_q:
                     print fmt
-
 
 
 if __name__ == "__main__":
@@ -335,10 +345,10 @@ if __name__ == "__main__":
         #alts='{"DEL": ["DEL", "Deletion"]}',
         #filters=None,
         #formats='{"GT": ["GT", 1, "String", "Genotype"]}',
-        #infos='{"": ["AC", null, "Integer", "Allele count in genotypes, for each ALT allele, in the same order as listed"]}',
+        #infos='{"AC": ["AC", null, "Integer", "Allele count in genotypes, for each ALT allele, in the same order as listed"]}',
         #metadata='{"fileformat": "VCFv4.0", "contig": "<ID=chrY,length=39584842,assembly=hg19>"}',
     #)
-    
+
     db.insert_commit(table='sample', file=file_row, sample="NA001")
     site_row = db.insert_commit(
         table="site",
@@ -382,7 +392,9 @@ if __name__ == "__main__":
     print "site", site_row
     print "call", call_row
 
-    test_query = db.query("SELECT site.chrom, site.pos, call.GT FROM site, call WHERE site.id = call.site")
+    t_qs = "SELECT site.chrom, site.pos, call.GT FROM site, call \
+            WHERE site.id = call.site"
+    test_query = db.query(t_qs)
     for row in test_query:
         print row
 
