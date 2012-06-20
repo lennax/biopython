@@ -243,12 +243,6 @@ class Pyvcf2db(object):
             # FIXME for roundtrip need to insert something
             if samp.called == False:
                 continue
-            # Divide HQ pair or set to None
-            HQ = samp.data.get('HQ')
-            try:
-                HQ1, HQ2 = HQ
-            except TypeError:
-                HQ1 = HQ2 = None
             # Retrieve sample index
             smp_id = self.sample_indexes[samp.sample]
             call_dict = dict(
@@ -258,8 +252,6 @@ class Pyvcf2db(object):
                 DP = samp.data.get('DP'),
                 FT = samp.data.get('FT'),
                 GQ = samp.data.get('GQ'),
-                HQ1 = HQ1,
-                HQ2 = HQ2,
             )
             # FIXME probably also want phased, gt_bases
             calls.append(call_dict)

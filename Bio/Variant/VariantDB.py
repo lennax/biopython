@@ -121,8 +121,6 @@ class VariantDB(object):
             ('DP', 'INTEGER'),
             ('FT', 'TEXT'),
             ('GQ', 'INTEGER'),
-            ('HQ1', 'INTEGER'),
-            ('HQ2', 'INTEGER'),
             ('update_date', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ('FOREIGN KEY', '(site) REFERENCES site(id)'),
             ('FOREIGN KEY', '(sample) REFERENCES sample(id)'),
@@ -384,8 +382,6 @@ if __name__ == "__main__":
         DP=2,
         FT=None,
         GQ=34,
-        HQ1=25,
-        HQ2=35,
     )
     db.conn.commit()
     print "meta", meta_row
