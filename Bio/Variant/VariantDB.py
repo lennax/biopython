@@ -194,15 +194,6 @@ class VariantDB(object):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def write_vcf(self, filepath,
-                  file_filter=None, site_filter=None, call_filter=None):
-        """
-        Write from DB to VCF.
-
-        """
-        raise NotImplementedError
-
 
 class VariantSqlite(VariantDB):
     """
@@ -256,69 +247,6 @@ class VariantSqlite(VariantDB):
         #for row in results:
             #print row
         return results
-
-    def write_vcf(self, filepath,
-                  file_id=None, site_filter=None, call_filter=None):
-        if file_id is None:
-            file_id = 1
-        metadata_qs = 'SELECT key, value FROM metadata WHERE file={0}'
-        metadata = self.query(metadata_qs.format(file_id))
-        for result in metadata:
-            print "##%s=%s" % (result['key'], result['value'])
-
-        h_qs = 'SELECT key, key_id, number, type, desc FROM default_keys \
-                WHERE file={0}'
-        header = self.query(h_qs.format(file_id))
-
-        def swap_num(result):
-            old = result['number']
-            numbers = {'-2': 'G', '-1': 'A', None: '.'}
-            if old not in numbers:
-                return int(old)
-            else:
-                return numbers[old]
-
-        sub_list = ['##{0[key]!s}=<ID={0[key_id]!s},',
-                       'Description="{0[desc]!s}">']
-        short_str = "".join(sub_list)
-        sub_list.insert(1, 'Number={1!s},Type={0[type]!s},')
-        long_str = "".join(sub_list)
-        sub_strs = {"INFO": long_str, "FORMAT": long_str,
-                    "ALT": short_str, "FILTER": short_str}
-        for result in header:
-            sub_str = sub_strs[result['key']]
-            print sub_str.format(result, swap_num(result))
-
-        vcf_header = "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT".split()
-        sample_qs = 'SELECT sample FROM sample WHERE file={0}'
-        sample_q = self.query(sample_qs.format(file_id))
-        samples = [r['sample'] for r in sample_q]
-        print "\t".join(vcf_header + samples)
-
-        site_cols = [c[0] for c in self.schema['site'][2:-2]]
-        call_cols = [c[0] for c in self.schema['call'][3:-3]]
-        site_q = self.query('SELECT id, {0} FROM site WHERE \
-                            file={1}'.format(', '.join(site_cols), file_id))
-        for site_row in site_q:
-            # FIXME need to differentiate between missing and "." in the file
-            print site_row
-            si_qs = 'SELECT k.key, si.value FROM key AS k, site_info AS si \
-                    WHERE si.site={0} AND si.key=k.id'
-            site_info_q = self.query(si_qs.format(site_row['id']))
-            for info in site_info_q:
-                print info
-
-            call_qs = 'SELECT sample, {0} FROM call WHERE site={1}'
-            call_q = self.query(call_qs.format(', '.join(call_cols),
-                                               site_row['id']))
-            for call_row in call_q:
-                print call_row
-                c_qs = 'SELECT k.key, c.value FROM key AS k, call_format AS c \
-                      WHERE c.site={0} AND c.sample={1} AND c.key = k.id'
-                call_fmt_q = self.query(c_qs.format(site_row['id'],
-                                                    call_row['sample']))
-                for fmt in call_fmt_q:
-                    print fmt
 
 
 if __name__ == "__main__":
@@ -405,6 +333,3 @@ if __name__ == "__main__":
     test_query = db.query(t_qs)
     for row in test_query:
         print row
-
-    test_write = VariantSqlite('walk.db')  # small output from walk_left.vcf
-    test_write.write_vcf(filepath = 'walk.vcf')
