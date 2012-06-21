@@ -287,7 +287,7 @@ class WriteVcf(object):
         metadata_qs = 'SELECT key, value FROM metadata WHERE file={0}'
         metadata = db.query(metadata_qs.format(file_id))
         for result in metadata:
-            print "##%s=%s" % (result['key'], result['value'])
+            print "##{0[key]}={0[value]}".format(result)
 
         h_qs = 'SELECT key, key_id, number, type, desc FROM default_keys \
                 WHERE file={0}'
@@ -301,16 +301,13 @@ class WriteVcf(object):
             else:
                 return numbers[old]
 
-        sub_list = ['##{0[key]!s}=<ID={0[key_id]!s},',
-                       'Description="{0[desc]!s}">']
-        short_str = "".join(sub_list)
-        sub_list.insert(1, 'Number={1!s},Type={0[type]!s},')
-        long_str = "".join(sub_list)
-        sub_strs = {"INFO": long_str, "FORMAT": long_str,
-                    "ALT": short_str, "FILTER": short_str}
+        two_str = '##{0[key]}=<ID={0[key_id]},Description="{0[desc]}">'
+        four_str = '##{0[key]}=<ID={0[key_id]},Number={num},Type={0[type]},Description="{0[desc]}">'
+        sub_strs = {"INFO": four_str, "FORMAT": four_str,
+                    "ALT": two_str, "FILTER": two_str}
         for result in header:
             sub_str = sub_strs[result['key']]
-            print sub_str.format(result, swap_num(result))
+            print sub_str.format(result, num=swap_num(result))
 
         vcf_header = "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT".split()
         sample_qs = 'SELECT sample FROM sample WHERE file={0}'
