@@ -209,11 +209,16 @@ class Pyvcf2db(object):
         default_allele_infos = {}
         for key in self.default_info_A:
             default_allele_infos[key] = row.INFO.get(key)
+        def str_allele(allele):
+            if allele is not None:
+                return str(allele)
+            return None
         for num, allele in enumerate(row.ALT):
+            print allele, type(allele)
             alt_dict = dict(
                 alt_index = num + 1,
                 site = site_id,
-                alt = str(allele),
+                alt = str_allele(allele),
             )
             # Set default per-A values
             for key in self.default_info_A:
@@ -321,12 +326,31 @@ class WriteVcf(object):
                             file={1}'.format(', '.join(site_cols), file_id))
         for site_row in site_q:
             # FIXME need to differentiate between missing and "." in the file
-            print site_row
+            #print site_row
+            #for col_name in site_row.keys():
+                #print col_name,
+            #print
+            #row = [str(x) for x in site_row[1:8]] + \
+                    #[";".join(["=".join([str(key), str(site_row[key])]) for key in site_row.keys()])]
+            row = [self._str(val) for val in (site_row['chrom'], site_row['pos'], site_row['id'], site_row['ref'])]
+            alt_qs = 'SELECT alt, AC, AF FROM alt WHERE site={0}'
+            alt_q = db.query(alt_qs.format(site_row['id']))
+            site_alt = []
+            alt_info = {'AC': [], 'AF': []}
+            for alt in alt_q:
+                site_alt.append(alt['alt'])
+                alt_info['AC'].append(alt['AC'])
+                alt_info['AF'].append(alt['AF'])
+            row.append(",".join(self._str(site_alt)))
             si_qs = 'SELECT k.key, si.value FROM key AS k, site_info AS si \
                     WHERE si.site={0} AND si.key=k.id'
             site_info_q = db.query(si_qs.format(site_row['id']))
             for info in site_info_q:
+
+                #for info in self.info_cols:
                 print info
+
+            print "\t".join(row)
 
             call_qs = 'SELECT sample, {0} FROM call WHERE site={1}'
             call_q = db.query(call_qs.format(', '.join(call_cols),
@@ -339,6 +363,11 @@ class WriteVcf(object):
                                                     call_row['sample']))
                 for fmt in call_fmt_q:
                     print fmt
+
+    def _str(self, item, _none='.'):
+        if isinstance(item, list):
+            return [str(x) if x is not None else _none for x in item]
+        return str(item) if item is not None else _none
 
 
 if __name__ == "__main__":
@@ -356,5 +385,5 @@ if __name__ == "__main__":
     #parser.parse_next()
     parser.parse_all()
 
-    db = VariantSqlite('walk.db')  # small output from walk_left.vcf
+    db = VariantSqlite('vcftest.db')  # small output from walk_left.vcf
     WriteVcf(database=db, filepath='walk.vcf')
