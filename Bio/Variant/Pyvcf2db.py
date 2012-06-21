@@ -342,6 +342,8 @@ class WriteVcf(object):
                 alt_info['AC'].append(alt['AC'])
                 alt_info['AF'].append(alt['AF'])
             row.append(",".join(self._str(site_alt)))
+            row += [self._str(val) for val in (site_row['qual'], site_row['filter'])]
+            # TODO three tables for INFO: site, alt, site_info
             si_qs = 'SELECT k.key, si.value FROM key AS k, site_info AS si \
                     WHERE si.site={0} AND si.key=k.id'
             site_info_q = db.query(si_qs.format(site_row['id']))
@@ -350,6 +352,7 @@ class WriteVcf(object):
                 #for info in self.info_cols:
                 print info
 
+            # FIXME I don't think I'm storing FORMAT
             print "\t".join(row)
 
             call_qs = 'SELECT sample, {0} FROM call WHERE site={1}'
