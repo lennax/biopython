@@ -273,10 +273,10 @@ class VariantSqlite(VariantDB):
         def swap_num(result):
             old = result['number']
             numbers = {'-2': 'G', '-1': 'A', None: '.'}
-            if old in numbers:
-                return numbers[old]
-            else:
+            if old not in numbers:
                 return int(old)
+            else:
+                return numbers[old]
 
         sub_list = ['##{0[key]!s}=<ID={0[key_id]!s},',
                        'Description="{0[desc]!s}">']
