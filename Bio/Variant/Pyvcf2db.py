@@ -64,8 +64,8 @@ class Pyvcf2db(object):
         self.scopes = ("info", "format")
         self.table_n = {'info': 'site', 'format': 'call'}
         # get INFO tags stored in site table
-        # cols 0-7 are fixed; last 2 cols are date and FK
-        self.info_cols = [col[0] for col in self.db.schema['site'][8:-2]]
+        # cols 0-8 are fixed; last 2 cols are date and FK
+        self.info_cols = [col[0] for col in self.db.schema['site'][9:-2]]
         # get FORMAT tags stored in call table
         # cols 0-2 are fixed; last 2 cols are date and FK
         self.format_cols = [col[0] for col in self.db.schema['call'][3:-2]]
@@ -157,7 +157,6 @@ class Pyvcf2db(object):
         Note: does not commit.
 
         """
-        print row.FORMAT
         # Organize and insert site/row/record info
         site_dict = dict(
             file = self.file_id,
