@@ -157,6 +157,7 @@ class Pyvcf2db(object):
         Note: does not commit.
 
         """
+        print row.FORMAT
         # Organize and insert site/row/record info
         site_dict = dict(
             file = self.file_id,
@@ -166,6 +167,8 @@ class Pyvcf2db(object):
             ref = row.REF,
             filter = row.FILTER,
             qual = row.QUAL,
+            fmt = row.FORMAT,
+            ## FIXME Why isn't this showing up
         )
 
         # Set default site info keys
@@ -214,7 +217,6 @@ class Pyvcf2db(object):
                 return str(allele)
             return None
         for num, allele in enumerate(row.ALT):
-            print allele, type(allele)
             alt_dict = dict(
                 alt_index = num + 1,
                 site = site_id,
@@ -353,6 +355,7 @@ class WriteVcf(object):
                 print info
 
             # FIXME I don't think I'm storing FORMAT
+            row.append(self._str(site_row['fmt']))
             print "\t".join(row)
 
             call_qs = 'SELECT sample, {0} FROM call WHERE site={1}'

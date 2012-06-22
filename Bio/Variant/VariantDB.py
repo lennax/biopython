@@ -80,6 +80,7 @@ class VariantDB(object):
             ('ref', 'TEXT'),
             ('filter', 'TEXT'),
             ('qual', 'TEXT'),
+            ('fmt', 'TEXT'),
             # Reserved INFO in vcf 4.0
             ('AA', 'TEXT'),
             ('AN', 'INTEGER'),
@@ -297,6 +298,7 @@ if __name__ == "__main__":
         ref="G",
         filter='q10',
         qual=22,
+        fmt="GT:DP:GQ",
         AA="G",
         AN=None,
         BQ=None,
@@ -328,7 +330,7 @@ if __name__ == "__main__":
     print "site", site_row
     print "call", call_row
 
-    t_qs = "SELECT site.chrom, site.pos, call.GT FROM site, call \
+    t_qs = "SELECT site.chrom, site.pos, site.fmt, call.GT FROM site, call \
             WHERE site.id = call.site"
     test_query = db.query(t_qs)
     for row in test_query:
