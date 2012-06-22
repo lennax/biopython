@@ -167,7 +167,6 @@ class Pyvcf2db(object):
             filter = row.FILTER,
             qual = row.QUAL,
             fmt = row.FORMAT,
-            ## FIXME Why isn't this showing up
         )
 
         # Set default site info keys
@@ -178,7 +177,6 @@ class Pyvcf2db(object):
         # Organize extra site info
         extra_sites = []
         # Loop through keys in file
-        # FIXME AF is getting put into site_info
         for key, value in row.INFO.iteritems():
             if self._find_key('info', key) is None:
                 self._add_key('info', key)
@@ -255,7 +253,7 @@ class Pyvcf2db(object):
             call_dict = {'site': site_id, 'sample': smp_id}
             for item in ('GT', 'DP', 'FT', 'GQ'):
                 call_dict[item] = samp.data.get(item)
-            # FIXME probably also want phased, gt_bases
+            # TODO probably also want phased, gt_bases
             calls.append(call_dict)
 
             for samp_k, samp_v in samp.data.iteritems():
@@ -348,12 +346,12 @@ class WriteVcf(object):
             si_qs = 'SELECT k.key, si.value FROM key AS k, site_info AS si \
                     WHERE si.site={0} AND si.key=k.id'
             site_info_q = db.query(si_qs.format(site_row['id']))
-            for info in site_info_q:
+            for col in site_info_q:
+                print col.keys()
+            # FIXME info_cols is in Pyvcf2db. Move it and site_cols to the db!
+            #for col in self.info_cols:
+                #print col
 
-                #for info in self.info_cols:
-                print info
-
-            # FIXME I don't think I'm storing FORMAT
             row.append(self._str(site_row['fmt']))
             print "\t".join(row)
 
