@@ -64,11 +64,9 @@ class Pyvcf2db(object):
         self.scopes = ("info", "format")
         self.table_n = {'info': 'site', 'format': 'call'}
         # get INFO tags stored in site table
-        # cols 0-8 are fixed; last 2 cols are date and FK
-        self.info_cols = [col[0] for col in self.db.schema['site'][9:-2]]
+        self.info_cols = db.site_cols_info
         # get FORMAT tags stored in call table
-        # cols 0-2 are fixed; last 2 cols are date and FK
-        self.format_cols = [col[0] for col in self.db.schema['call'][3:-2]]
+        self.format_cols = db.call_cols
         # Init empty dicts for storing arbitrary keys
         for scope in self.scopes:
             for dict_name in ("extra_{0}", "{0}_A", "{0}_G"):
@@ -319,8 +317,8 @@ class WriteVcf(object):
         samples = [r['sample'] for r in sample_q]
         print "\t".join(vcf_header + samples)
 
-        site_cols = [c[0] for c in db.schema['site'][2:-2]]
-        call_cols = [c[0] for c in db.schema['call'][3:-3]]
+        site_cols = db.site_cols
+        call_cols = db.call_cols
         site_q = db.query('SELECT id, {0} FROM site WHERE \
                             file={1}'.format(', '.join(site_cols), file_id))
         for site_row in site_q:
@@ -348,9 +346,10 @@ class WriteVcf(object):
             site_info_q = db.query(si_qs.format(site_row['id']))
             for col in site_info_q:
                 print col.keys()
-            # FIXME info_cols is in Pyvcf2db. Move it and site_cols to the db!
-            #for col in self.info_cols:
-                #print col
+            for col in db.site_cols_info:
+                print col
+            for col in alt_info.keys():
+                print col
 
             row.append(self._str(site_row['fmt']))
             print "\t".join(row)

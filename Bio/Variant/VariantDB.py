@@ -37,6 +37,13 @@ class VariantDB(object):
                 ", ".join(("".join((":", x)) for x in ins_iter))
             )
 
+        # cols 0-1 are id and file, last 2 are date and FK
+        self.site_cols = [c[0] for c in self.schema['site'][2:-2]]
+        # cols 2-8 are the VCF fixed fields
+        self.site_cols_info = [c[0] for c in self.schema['site'][9:-2]]
+        # cols 0-2 and last 3 are id/FK and date
+        self.call_cols = [c[0] for c in self.schema['call'][3:-3]]
+
     # schema definitions
     schema = {
         'file': [
