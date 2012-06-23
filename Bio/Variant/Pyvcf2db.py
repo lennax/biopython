@@ -374,9 +374,10 @@ class WriteVcf(object):
                     infos[col] = None
 
             # FIXME need to ','.join() lists, not str() them
-            print ";".join(["=".join(
-                    [k, str(infos[k])]
+            str_info = ";".join(["=".join(
+                    [k, self.fmt_info(infos[k])]
             ) if infos[k] is not None else k for k in infos.keys()])
+            row.append(str_info)
 
             row.append(self._str(site_row['fmt']))
             print "\t".join(row)
@@ -397,6 +398,11 @@ class WriteVcf(object):
         if isinstance(item, list):
             return [str(x) if x is not None else _none for x in item]
         return str(item) if item is not None else _none
+
+    def fmt_info(self, item):
+        if isinstance(item, list):
+            return ','.join([self._str(x) for x in item])
+        return self._str(item)
 
 
 if __name__ == "__main__":
