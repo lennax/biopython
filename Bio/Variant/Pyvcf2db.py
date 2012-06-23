@@ -350,7 +350,6 @@ class WriteVcf(object):
                     WHERE file={0} AND key="INFO" AND type="Flag"'
             flag_q = db.query(flag_qs.format(file_id))
             flag_keys = [str(flag_row[0]) for flag_row in flag_q]
-            print flag_keys
             for col in site_info_q:
                 if col['value'] is None:
                     continue
@@ -358,23 +357,26 @@ class WriteVcf(object):
                     infos[col['key']] = col['value']
                 else:
                     # TODO how to do a join where flag has no =True?
-                    pass
+                    infos[col['key']] = None
             for col in db.site_cols_info:
                 if site_row[col] is None:
                     continue
                 if col not in flag_keys:
                     infos[col] = site_row[col]
-                #print col
+                else:
+                    infos[col] = None
             for col, val in alt_info.iteritems():
                 if val is None or all([x is None for x in val]):
                     continue
                 if col not in flag_keys:
                     infos[col] = val
                 else:
-                    pass
+                    infos[col] = None
 
-                #print col
-            print infos
+            # FIXME need to ','.join() lists, not str() them
+            print ";".join(["=".join(
+                    [k, str(infos[k])]
+            ) if infos[k] is not None else k for k in infos.keys()])
 
             row.append(self._str(site_row['fmt']))
             print "\t".join(row)
