@@ -398,7 +398,9 @@ class WriteVcf(object):
                         item = ",".join(self._str(x[1]) for x in call_fmt_q)
                     else:
                         try:
-                            item = call_row[self._str(fmt_item)]
+                            item = call_row[str(fmt_item)]
+                            if fmt_item == "GT" and item is None:
+                                item = "./."
                         except IndexError:
                             item = call_fmt_q
                     samp_list.append(self._str(item))
