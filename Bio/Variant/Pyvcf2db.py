@@ -393,16 +393,12 @@ class WriteVcf(object):
                 samp_list = []
                 fmts_list = site_row['fmt'].split(":")
                 for fmt_item in fmts_list:
-                    # FIXME None GT needs to become ./.
-                    if fmt_item == "HQ":
-                        item = ",".join(self._str(x[1]) for x in call_fmt_q)
-                    else:
-                        try:
-                            item = call_row[str(fmt_item)]
-                            if fmt_item == "GT" and item is None:
-                                item = "./."
-                        except IndexError:
-                            item = call_fmt_q
+                    try:
+                        item = call_row[str(fmt_item)]
+                        if fmt_item == "GT" and item is None:
+                            item = "./."
+                    except IndexError:
+                        item = self.fmt_info([x[1] for x in call_fmt_q])
                     samp_list.append(self._str(item))
                 assert len(samp_list) == len(fmts_list)
                 row.append(":".join(samp_list))
