@@ -208,6 +208,7 @@ class Pyvcf2db(object):
         default_allele_infos = {}
         for key in self.default_info_A:
             default_allele_infos[key] = row.INFO.get(key)
+
         def str_allele(allele):
             if allele is not None:
                 return str(allele)
@@ -244,8 +245,8 @@ class Pyvcf2db(object):
         for samp in row.samples:
             # Don't insert genotype that wasn't called XXX ?
             # FIXME for roundtrip need to insert something
-            if samp.called == False:
-                continue
+            #if samp.called == False:
+                #continue
 
             # Retrieve sample index
             smp_id = self.sample_indexes[samp.sample]
@@ -277,6 +278,7 @@ class Pyvcf2db(object):
         #     and have call_format use site and sampname instead of call id
         db.insert_many(table='call', row_iter=calls)
         db.insert_many(table='call_format', row_iter = extra_calls)
+
 
 class WriteVcf(object):
     """
@@ -340,7 +342,7 @@ class WriteVcf(object):
                 alt_info['AC'].append(alt['AC'])
                 alt_info['AF'].append(alt['AF'])
             row.append(",".join(self._str(site_alt)))
-            row += [self._str(val) for val in (site_row['qual'], site_row['filter'])]
+            row.extend([self._str(val) for val in (site_row['qual'], site_row['filter'])])
             # TODO three tables for INFO: site, alt, site_info
             infos = {}
             si_qs = 'SELECT k.key, si.value FROM key AS k, site_info AS si \
@@ -351,12 +353,12 @@ class WriteVcf(object):
             flag_q = db.query(flag_qs.format(file_id))
             flag_keys = [str(flag_row[0]) for flag_row in flag_q]
             for col in site_info_q:
-                if col['value'] is None:
+                # False and None values can be skipped
+                if not col['value']:
                     continue
                 if col['key'] not in flag_keys:
                     infos[col['key']] = col['value']
                 else:
-                    # TODO how to do a join where flag has no =True?
                     infos[col['key']] = None
             for col in db.site_cols_info:
                 if site_row[col] is None:
@@ -373,26 +375,37 @@ class WriteVcf(object):
                 else:
                     infos[col] = None
 
-            # FIXME need to ','.join() lists, not str() them
             str_info = ";".join(["=".join(
                     [k, self.fmt_info(infos[k])]
             ) if infos[k] is not None else k for k in infos.keys()])
             row.append(str_info)
 
             row.append(self._str(site_row['fmt']))
-            print "\t".join(row)
 
             call_qs = 'SELECT sample, {0} FROM call WHERE site={1}'
             call_q = db.query(call_qs.format(', '.join(call_cols),
                                                site_row['id']))
             for call_row in call_q:
-                print call_row
                 c_qs = 'SELECT k.key, c.value FROM key AS k, call_format AS c \
                       WHERE c.site={0} AND c.sample={1} AND c.key = k.id'
                 call_fmt_q = db.query(c_qs.format(site_row['id'],
                                                     call_row['sample']))
-                for fmt in call_fmt_q:
-                    print fmt
+                samp_list = []
+                fmts_list = site_row['fmt'].split(":")
+                for fmt_item in fmts_list:
+                    # FIXME None GT needs to become ./.
+                    if fmt_item == "HQ":
+                        item = ",".join(self._str(x[1]) for x in call_fmt_q)
+                    else:
+                        try:
+                            item = call_row[self._str(fmt_item)]
+                        except IndexError:
+                            item = call_fmt_q
+                    samp_list.append(self._str(item))
+                assert len(samp_list) == len(fmts_list)
+                row.append(":".join(samp_list))
+
+            print "\t".join(row)
 
     def _str(self, item, _none='.'):
         if isinstance(item, list):
