@@ -30,6 +30,13 @@ class Variant(object):
         # use list to allow addition of arbitrary items to print representation
         return "{0}({1})".format(self.str_name, ", ".join(self.str_list))
 
+
+class Genotype(object):
+    def __init__(self, GT):
+        self.GT = GT
+        # representing VCF requires work from the VCF parser/adapter
+        # to keep track of what number means what
+
 if __name__ == "__main__":
     test_var = Variant("DNAaccession", FeatureLocation(303, 304), "G", "C")
     print test_var
