@@ -4,11 +4,12 @@ from Bio.SeqFeature import FeatureLocation
 
 
 class Variant(object):
-    def __init__(self, accession, location, pre, post):
+    def __init__(self, accession, location, pre, post, extra=None):
         self.accession = accession
         self.location = location
         self.pre = pre
         self.post = post
+        self.extra = extra
         # For string representation
         self.str_name = "Variant"
         self.str_list = [self.accession, self.loc_str,
@@ -32,10 +33,14 @@ class Variant(object):
 
 
 class Genotype(object):
-    def __init__(self, GT):
-        self.GT = GT
+    def __init__(self, genotypes, phases, extra=None):
+        # A pair of genotypes will have one phase, etc.
+        assert len(genotypes) == len(phases) + 1
+        self.genotypes = genotypes
+        self.phases = phases
         # representing VCF requires work from the VCF parser/adapter
         # to keep track of what number means what
+        self.extra = extra
 
 if __name__ == "__main__":
     test_var = Variant("DNAaccession", FeatureLocation(303, 304), "G", "C")
