@@ -1,6 +1,5 @@
 
 
-from Bio.SeqFeature import FeatureLocation
 
 
 class Variant(object):
@@ -13,7 +12,7 @@ class Variant(object):
         # For string representation
         self.str_name = "Variant"
         self.str_list = [self.accession, self.loc_str,
-                           self.pre, self.post]
+                           self.pre, str(self.post)]
 
     @property
     def start(self):
@@ -31,6 +30,9 @@ class Variant(object):
         # use list to allow addition of arbitrary items to print representation
         return "{0}({1})".format(self.str_name, ", ".join(self.str_list))
 
+    def __repr__(self):
+        return self.__str__()
+
 
 class Genotype(object):
     def __init__(self, genotypes, phases, extra=None):
@@ -43,5 +45,6 @@ class Genotype(object):
         self.extra = extra
 
 if __name__ == "__main__":
+    from Bio.SeqFeature import FeatureLocation
     test_var = Variant("DNAaccession", FeatureLocation(303, 304), "G", "C")
     print test_var
