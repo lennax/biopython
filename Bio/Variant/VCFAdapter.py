@@ -15,14 +15,16 @@ class VCFAdapter(object):
     def next(self):
         row = self.parser.next()
         alts = self._fmt_alts(row.POS, row.REF, row.ALT)
-        print alts
+        #print alts
+        samples = self._fmt_samples(row.samples)
 
-    def _fmt_samples(self, samples):
-        pass
+    def _fmt_samples(self, sample_list):
+        for samp in sample_list:
+            print samp
 
     def _fmt_alts(self, position, ref, alt_list):
         alts = []
-        accession = "?"
+        accession = "?"  # FIXME
         # VCF position is 1 based
         start = position - 1
         for alt in alt_list:
