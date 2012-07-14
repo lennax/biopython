@@ -35,13 +35,14 @@ class Variant(object):
 
 
 class Genotype(object):
-    def __init__(self, genotypes, phases, extra=None):
+    def __init__(self, genotypes, phases, sample, extra=None):
         # A pair of genotypes will have one phase, etc.
         assert len(genotypes) == len(phases) + 1
         self.genotypes = genotypes
         self.phases = phases
         # representing VCF requires work from the VCF parser/adapter
         # to keep track of what number means what
+        self.sample = sample
         self.extra = extra
 
 if __name__ == "__main__":

@@ -17,10 +17,29 @@ class VCFAdapter(object):
         alts = self._fmt_alts(row.POS, row.REF, row.ALT)
         #print alts
         samples = self._fmt_samples(row.samples)
+        # TODO make string representation of Genotype
 
     def _fmt_samples(self, sample_list):
+        samples = []
         for samp in sample_list:
-            print samp
+            phased = samp.data.GT.split("|")
+            unphased = samp.data.GT.split("/")
+            # FIXME this only works for diploid calls
+            if len(phased) > 1:
+                genotypes = phased
+                phases = [True]
+            elif len(unphased) > 1:
+                genotypes = unphased
+                phases = [False]
+
+            #for k, v in samp.data._asdict().iteritems():
+                #print k, v
+            extra = dict((k, v) for k, v in samp.data._asdict().iteritems() if k != "GT")
+            #for k in samp.data._fields:
+                #print k, getattr(samp.data, k)
+            samples.append(Genotype(genotypes, phases, samp.sample, extra))
+        return samples
+
 
     def _fmt_alts(self, position, ref, alt_list):
         alts = []
