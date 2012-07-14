@@ -45,6 +45,25 @@ class Genotype(object):
         self.sample = sample
         self.extra = extra
 
+    def __str__(self):
+        return "Genotype(sample={sample}, Data('GT': {GT}{extra}))".format(
+            sample=self.sample,
+            GT = self.GT_string,
+            extra = ", " + str(self.extra)[1:-1]
+        )
+
+    @property
+    def GT_string(self, phase_sep = "|", unphase_sep = "/"):
+        gt_list = [self.genotypes[0]]
+        for gt, phase in zip(self.genotypes[1:], self.phases):
+            if phase:
+                gt_list.append(phase_sep)
+            else:
+                gt_list.append(unphase_sep)
+            gt_list.append(gt)
+
+        return "".join(gt_list)
+
 if __name__ == "__main__":
     from Bio.SeqFeature import FeatureLocation
     test_var = Variant("DNAaccession", FeatureLocation(303, 304), "G", "C")

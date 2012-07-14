@@ -1,4 +1,4 @@
-
+import warnings
 
 from vcf import Reader
 
@@ -17,7 +17,8 @@ class VCFAdapter(object):
         alts = self._fmt_alts(row.POS, row.REF, row.ALT)
         #print alts
         samples = self._fmt_samples(row.samples)
-        # TODO make string representation of Genotype
+        #for samp in samples:
+            #print samp
 
     def _fmt_samples(self, sample_list):
         samples = []
@@ -25,12 +26,14 @@ class VCFAdapter(object):
             phased = samp.data.GT.split("|")
             unphased = samp.data.GT.split("/")
             # FIXME this only works for diploid calls
-            if len(phased) > 1:
+            if len(phased) == 2:
                 genotypes = phased
                 phases = [True]
-            elif len(unphased) > 1:
+            elif len(unphased) == 2:
                 genotypes = unphased
                 phases = [False]
+            else:
+                warnings.warn("Can't handle polyploid genotypes yet", FutureWarning)
 
             #for k, v in samp.data._asdict().iteritems():
                 #print k, v
