@@ -6,6 +6,14 @@ from Bio.SeqFeature import FeatureLocation
 from variant import Variant, Genotype
 
 
+class VCFRow(object):
+    def __init__(self, alts):
+        self.alts = alts
+
+    def __str__(self):
+        # TODO make str
+        pass
+
 class VCFAdapter(object):
     def __init__(self, filename):
         self.parser = Reader(filename=filename)
@@ -16,11 +24,15 @@ class VCFAdapter(object):
         row = self.parser.next()
         alts = self._fmt_alts(row.POS, row.REF, row.ALT)
         #print alts
-        samples = self._fmt_samples(row.samples)
+        vcfrow = VCFRow(alts)
+        samples = self._fmt_samples(vcfrow, row.samples)
+        vcfrow.samples = samples
         #for samp in samples:
             #print samp
+        print samples[0].GT_string
+        print samples[0].GT_bases
 
-    def _fmt_samples(self, sample_list):
+    def _fmt_samples(self, parent, sample_list):
         samples = []
         for samp in sample_list:
             phased = samp.data.GT.split("|")
@@ -40,7 +52,7 @@ class VCFAdapter(object):
             extra = dict((k, v) for k, v in samp.data._asdict().iteritems() if k != "GT")
             #for k in samp.data._fields:
                 #print k, getattr(samp.data, k)
-            samples.append(Genotype(genotypes, phases, samp.sample, extra))
+            samples.append(Genotype(parent, genotypes, phases, samp.sample, extra))
         return samples
 
 

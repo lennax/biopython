@@ -35,7 +35,8 @@ class Variant(object):
 
 
 class Genotype(object):
-    def __init__(self, genotypes, phases, sample, extra=None):
+    def __init__(self, parent, genotypes, phases, sample, extra=None):
+        self.parent = parent
         # A pair of genotypes will have one phase, etc.
         assert len(genotypes) == len(phases) + 1
         self.genotypes = genotypes
@@ -53,7 +54,7 @@ class Genotype(object):
         )
 
     @property
-    def GT_string(self, phase_sep = "|", unphase_sep = "/"):
+    def GT_string(self, phase_sep="|", unphase_sep="/"):
         gt_list = [self.genotypes[0]]
         for gt, phase in zip(self.genotypes[1:], self.phases):
             if phase:
@@ -63,6 +64,26 @@ class Genotype(object):
             gt_list.append(gt)
 
         return "".join(gt_list)
+
+    @property
+    def GT_bases(self, phase_sep="|", unphase_sep="/"):
+        def gt2base(index):
+            if index == 0:
+                # XXX will the pre always be the same?
+                return str(self.parent.alts[0].pre)
+            else:
+                return str(self.parent.alts[int(index)].post)
+        gt_list = [gt2base(self.genotypes[0])]
+        for gt, phase in zip(self.genotypes[1:], self.phases):
+            if phase:
+                gt_list.append(phase_sep)
+            else:
+                gt_list.append(unphase_sep)
+            gt_list.append(gt2base(gt))
+
+        return "".join(gt_list)
+
+
 
 if __name__ == "__main__":
     from Bio.SeqFeature import FeatureLocation
