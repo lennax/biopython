@@ -24,6 +24,7 @@ class VCFRow(object):
             string_list.append(samp)
         return "\n".join([str(x) for x in string_list])
 
+
 class VCFGenotype(object):
     def __init__(self, parent, genotypes, phases, sample, **extra):
         # Reference to the parent VCFRow
@@ -40,7 +41,7 @@ class VCFGenotype(object):
     def __str__(self):
         string = "Genotype(sample={sample}, Data('GT': {GT}))".format(
             sample=self.sample,
-            GT = self.GT_string,
+            GT=self.GT_string,
         )
         extras = []
         for k, v in self.extra.iteritems():
@@ -109,14 +110,17 @@ class VCFAdapter(object):
                 genotypes = unphased
                 phases = [False]
             else:
-                warnings.warn("Can't handle polyploid genotypes yet", FutureWarning)
+                warnings.warn("Can't handle polyploid genotypes yet",
+                              FutureWarning)
 
             #for k, v in samp.data._asdict().iteritems():
                 #print k, v
-            extra = dict((k, v) for k, v in samp.data._asdict().iteritems() if k != "GT")
+            extra = dict((k, v) for k, v in samp.data._asdict().iteritems()
+                         if k != "GT")
             #for k in samp.data._fields:
                 #print k, getattr(samp.data, k)
-            samples.append(VCFGenotype(parent, genotypes, phases, samp.sample, **extra))
+            samples.append(VCFGenotype(
+                parent, genotypes, phases, samp.sample, **extra))
         return samples
 
     def _fmt_alts(self, position, ref, alt_list):
@@ -125,7 +129,7 @@ class VCFAdapter(object):
         # VCF position is 1 based
         start = position - 1
         for alt in alt_list:
-            end = start + len(alt) 
+            end = start + len(alt)
             location = FeatureLocation(start, end)
             alts.append(Variant(accession, location, ref, alt))
 

@@ -1,7 +1,5 @@
 
 
-
-
 class Variant(object):
     def __init__(self, accession, location, pre, post, **extra):
         self.accession = accession
@@ -20,7 +18,7 @@ class Variant(object):
 
     @property
     def loc_str(self):
-        return "[%s,%s)" % ( self.start, self.end )
+        return "[%s,%s)" % (self.start, self.end)
 
     def __str__(self):
         str_name = "Variant"
@@ -39,7 +37,8 @@ class Variant(object):
 
 if __name__ == "__main__":
     from Bio.SeqFeature import FeatureLocation
-    test_var = Variant("DNAaccession", FeatureLocation(303, 304), "G", "C")
+    test_args = ["DNAaccession", FeatureLocation(303, 304), "G", "C"]
+    test_var = Variant(*test_args)
     print test_var
-    test_var_2 = Variant("DNAaccession", FeatureLocation(303, 304), "G", "C", ancestral='G')
+    test_var_2 = Variant(*test_args, ancestral='G')
     print test_var_2
