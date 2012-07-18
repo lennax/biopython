@@ -10,13 +10,23 @@ class VCFRow(object):
     def __init__(self, alts):
         self.alts = alts
 
-    def __str__(self):
-        # TODO make str
-        pass
+    @property
+    def samples(self):
+        return self._samples
 
+    @samples.setter
+    def samples(self, val):
+        self._samples = val
+
+    def __str__(self):
+        string_list = [self.alts]
+        for samp in self.samples:
+            string_list.append(samp)
+        return "\n".join([str(x) for x in string_list])
 
 class VCFGenotype(object):
-    def __init__(self, parent, genotypes, phases, sample, extra=None):
+    def __init__(self, parent, genotypes, phases, sample, **extra):
+        # Reference to the parent VCFRow
         self.parent = parent
         # A pair of genotypes will have one phase, etc.
         assert len(genotypes) == len(phases) + 1
@@ -28,11 +38,16 @@ class VCFGenotype(object):
         self.extra = extra
 
     def __str__(self):
-        return "Genotype(sample={sample}, Data('GT': {GT}{extra}))".format(
+        string = "Genotype(sample={sample}, Data('GT': {GT}))".format(
             sample=self.sample,
             GT = self.GT_string,
-            extra = ", " + str(self.extra)[1:-1]
         )
+        extras = []
+        for k, v in self.extra.iteritems():
+            extras.append("\n{0}: {1}".format(k, v))
+        if extras:
+            string = "".join([string] + extras)
+        return string
 
     @property
     def GT_string(self, phase_sep="|", unphase_sep="/"):
@@ -74,14 +89,12 @@ class VCFAdapter(object):
     def next(self):
         row = self.parser.next()
         alts = self._fmt_alts(row.POS, row.REF, row.ALT)
-        #print alts
         vcfrow = VCFRow(alts)
         samples = self._fmt_samples(vcfrow, row.samples)
         vcfrow.samples = samples
-        #for samp in samples:
-            #print samp
-        print samples[0].GT_string
-        print samples[0].GT_bases
+        #print samples[0].GT_string
+        #print samples[0].GT_bases
+        return vcfrow
 
     def _fmt_samples(self, parent, sample_list):
         samples = []
@@ -103,7 +116,7 @@ class VCFAdapter(object):
             extra = dict((k, v) for k, v in samp.data._asdict().iteritems() if k != "GT")
             #for k in samp.data._fields:
                 #print k, getattr(samp.data, k)
-            samples.append(VCFGenotype(parent, genotypes, phases, samp.sample, extra))
+            samples.append(VCFGenotype(parent, genotypes, phases, samp.sample, **extra))
         return samples
 
     def _fmt_alts(self, position, ref, alt_list):
@@ -121,4 +134,5 @@ class VCFAdapter(object):
 
 if __name__ == "__main__":
     p = VCFAdapter("/Users/lenna/Python/PyVCF/vcf/test/walk_left.vcf")
-    p.next()
+    row = p.next()
+    print row
