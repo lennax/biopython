@@ -3,7 +3,7 @@ import warnings
 from vcf import Reader
 
 from Bio.SeqFeature import FeatureLocation
-from variant import Variant, Genotype
+from variant import Variant
 
 
 class VCFRow(object):
@@ -13,6 +13,57 @@ class VCFRow(object):
     def __str__(self):
         # TODO make str
         pass
+
+
+class VCFGenotype(object):
+    def __init__(self, parent, genotypes, phases, sample, extra=None):
+        self.parent = parent
+        # A pair of genotypes will have one phase, etc.
+        assert len(genotypes) == len(phases) + 1
+        self.genotypes = genotypes
+        self.phases = phases
+        # representing VCF requires work from the VCF parser/adapter
+        # to keep track of what number means what
+        self.sample = sample
+        self.extra = extra
+
+    def __str__(self):
+        return "Genotype(sample={sample}, Data('GT': {GT}{extra}))".format(
+            sample=self.sample,
+            GT = self.GT_string,
+            extra = ", " + str(self.extra)[1:-1]
+        )
+
+    @property
+    def GT_string(self, phase_sep="|", unphase_sep="/"):
+        gt_list = [self.genotypes[0]]
+        for gt, phase in zip(self.genotypes[1:], self.phases):
+            if phase:
+                gt_list.append(phase_sep)
+            else:
+                gt_list.append(unphase_sep)
+            gt_list.append(gt)
+
+        return "".join(gt_list)
+
+    @property
+    def GT_bases(self, phase_sep="|", unphase_sep="/"):
+        def gt2base(index):
+            if index == 0:
+                # XXX will the pre always be the same?
+                return str(self.parent.alts[0].pre)
+            else:
+                return str(self.parent.alts[int(index)].post)
+        gt_list = [gt2base(self.genotypes[0])]
+        for gt, phase in zip(self.genotypes[1:], self.phases):
+            if phase:
+                gt_list.append(phase_sep)
+            else:
+                gt_list.append(unphase_sep)
+            gt_list.append(gt2base(gt))
+
+        return "".join(gt_list)
+
 
 class VCFAdapter(object):
     def __init__(self, filename):
@@ -52,9 +103,8 @@ class VCFAdapter(object):
             extra = dict((k, v) for k, v in samp.data._asdict().iteritems() if k != "GT")
             #for k in samp.data._fields:
                 #print k, getattr(samp.data, k)
-            samples.append(Genotype(parent, genotypes, phases, samp.sample, extra))
+            samples.append(VCFGenotype(parent, genotypes, phases, samp.sample, extra))
         return samples
-
 
     def _fmt_alts(self, position, ref, alt_list):
         alts = []
@@ -67,7 +117,6 @@ class VCFAdapter(object):
             alts.append(Variant(accession, location, ref, alt))
 
         return alts
-
 
 
 if __name__ == "__main__":
