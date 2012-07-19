@@ -7,7 +7,8 @@ from variant import Variant
 
 
 class VCFRow(object):
-    def __init__(self, alts):
+    def __init__(self, row, alts):
+        self.row = row
         self.alts = alts
 
     @property
@@ -18,8 +19,45 @@ class VCFRow(object):
     def samples(self, val):
         self._samples = val
 
+    @property
+    def CHROM(self):
+        return self.row.CHROM
+
+    @property
+    def POS(self):
+        return self.row.POS
+
+    @property
+    def ID(self):
+        return self.row.ID
+
+    @property
+    def REF(self):
+        return self.row.REF
+
+    @property
+    def ALT(self):
+        return self.row.ALT
+
+    @property
+    def QUAL(self):
+        return self.row.QUAL
+
+    @property
+    def FILTER(self):
+        return self.row.FILTER
+
+    @property
+    def INFO(self):
+        return self.row.INFO
+
+    @property
+    def FORMAT(self):
+        return self.row.FORMAT
+
     def __str__(self):
-        string_list = [self.alts]
+        string_list = ["\t".join([str(x) for x in (self.CHROM, self.POS, self.ID, self.REF, self.ALT, self.QUAL, self.FILTER, self.INFO, self.FORMAT)])]
+        string_list.append(self.alts)
         for samp in self.samples:
             string_list.append(samp)
         return "\n".join([str(x) for x in string_list])
@@ -87,10 +125,14 @@ class VCFAdapter(object):
         # FIXME VCF does not explicity require an accession
         # best way to find the right one in a file?
 
+    def __str__(self):
+        # TODO make str
+        pass
+
     def next(self):
         row = self.parser.next()
         alts = self._fmt_alts(row.POS, row.REF, row.ALT)
-        vcfrow = VCFRow(alts)
+        vcfrow = VCFRow(row, alts)
         samples = self._fmt_samples(vcfrow, row.samples)
         vcfrow.samples = samples
         #print samples[0].GT_string
@@ -138,5 +180,8 @@ class VCFAdapter(object):
 
 if __name__ == "__main__":
     p = VCFAdapter("/Users/lenna/Python/PyVCF/vcf/test/walk_left.vcf")
+    # TODO accessors for some of the properties in PyVCF
+    print dir(p.parser)
+    print dir(p.parser.next())
     row = p.next()
     print row
