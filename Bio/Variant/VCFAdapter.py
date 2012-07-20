@@ -7,9 +7,10 @@ from variant import Variant
 
 
 class VCFRow(object):
-    def __init__(self, row, alts):
+    def __init__(self, row):
         self.row = row
-        self.alts = alts
+        self.alts = self._fmt_alts()
+        self.samples = self._fmt_samples()
 
     @property
     def samples(self):
@@ -56,11 +57,52 @@ class VCFRow(object):
         return self.row.FORMAT
 
     def __str__(self):
-        string_list = ["\t".join([str(x) for x in (self.CHROM, self.POS, self.ID, self.REF, self.ALT, self.QUAL, self.FILTER, self.INFO, self.FORMAT)])]
+        string_list = ["\t".join([str(x) for x in (
+            self.CHROM, self.POS, self.ID, self.REF, self.ALT,
+            self.QUAL, self.FILTER, self.INFO, self.FORMAT)])]
         string_list.append(self.alts)
         for samp in self.samples:
             string_list.append(samp)
         return "\n".join([str(x) for x in string_list])
+
+    def _fmt_samples(self):
+        sample_list = self.row.samples
+        samples = []
+        for samp in sample_list:
+            phased = samp.data.GT.split("|")
+            unphased = samp.data.GT.split("/")
+            # FIXME this only works for diploid calls
+            if len(phased) == 2:
+                genotypes = phased
+                phases = [True]
+            elif len(unphased) == 2:
+                genotypes = unphased
+                phases = [False]
+            else:
+                warnings.warn("Can't handle polyploid genotypes yet",
+                              FutureWarning)
+
+            #for k, v in samp.data._asdict().iteritems():
+                #print k, v
+            extra = dict((k, v) for k, v in samp.data._asdict().iteritems()
+                         if k != "GT")
+            #for k in samp.data._fields:
+                #print k, getattr(samp.data, k)
+            samples.append(VCFGenotype(
+                self, genotypes, phases, samp.sample, **extra))
+        return samples
+
+    def _fmt_alts(self):
+        alts = []
+        accession = "?"  # FIXME
+        # VCF position is 1 based
+        start = self.POS - 1
+        for alt in self.ALT:
+            end = start + len(alt)
+            location = FeatureLocation(start, end)
+            alts.append(Variant(accession, location, self.REF, alt))
+        # TODO pass VCF type to Variant? implement type guesser in Variant?
+        return alts
 
 
 class VCFGenotype(object):
@@ -130,52 +172,15 @@ class VCFAdapter(object):
         pass
 
     def next(self):
-        row = self.parser.next()
-        alts = self._fmt_alts(row.POS, row.REF, row.ALT)
-        vcfrow = VCFRow(row, alts)
-        samples = self._fmt_samples(vcfrow, row.samples)
-        vcfrow.samples = samples
+        #row = self.parser.next()
+        #alts = self._fmt_alts(row.POS, row.REF, row.ALT)
+        #vcfrow = VCFRow(row, alts)
+        #samples = self._fmt_samples(vcfrow, row.samples)
+        #vcfrow.samples = samples
         #print samples[0].GT_string
         #print samples[0].GT_bases
-        return vcfrow
-
-    def _fmt_samples(self, parent, sample_list):
-        samples = []
-        for samp in sample_list:
-            phased = samp.data.GT.split("|")
-            unphased = samp.data.GT.split("/")
-            # FIXME this only works for diploid calls
-            if len(phased) == 2:
-                genotypes = phased
-                phases = [True]
-            elif len(unphased) == 2:
-                genotypes = unphased
-                phases = [False]
-            else:
-                warnings.warn("Can't handle polyploid genotypes yet",
-                              FutureWarning)
-
-            #for k, v in samp.data._asdict().iteritems():
-                #print k, v
-            extra = dict((k, v) for k, v in samp.data._asdict().iteritems()
-                         if k != "GT")
-            #for k in samp.data._fields:
-                #print k, getattr(samp.data, k)
-            samples.append(VCFGenotype(
-                parent, genotypes, phases, samp.sample, **extra))
-        return samples
-
-    def _fmt_alts(self, position, ref, alt_list):
-        alts = []
-        accession = "?"  # FIXME
-        # VCF position is 1 based
-        start = position - 1
-        for alt in alt_list:
-            end = start + len(alt)
-            location = FeatureLocation(start, end)
-            alts.append(Variant(accession, location, ref, alt))
-
-        return alts
+        #return vcfrow
+        return VCFRow(self.parser.next())
 
 
 if __name__ == "__main__":
@@ -185,3 +190,5 @@ if __name__ == "__main__":
     print dir(p.parser.next())
     row = p.next()
     print row
+    samp = row.samples[0]
+    print "bases:", samp.GT_bases
