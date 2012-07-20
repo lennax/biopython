@@ -2,11 +2,12 @@ from Bio.SeqFeature import SeqFeature
 
 
 class Variant(object):
-    def __init__(self, accession, location, pre, post, **extra):
+    def __init__(self, accession, location, pre, post, type=None, **extra):
         self.accession = accession
         self.location = location
         self.pre = pre
         self.post = post
+        self.type = type
         self.extra = extra
 
     @property

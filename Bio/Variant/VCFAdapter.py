@@ -6,161 +6,6 @@ from Bio.SeqFeature import FeatureLocation
 from variant import Variant
 
 
-class VCFRow(object):
-    def __init__(self, row):
-        self.row = row
-        self.alts = self._fmt_alts()
-        self.samples = self._fmt_samples()
-
-    @property
-    def samples(self):
-        return self._samples
-
-    @samples.setter
-    def samples(self, val):
-        self._samples = val
-
-    @property
-    def CHROM(self):
-        return self.row.CHROM
-
-    @property
-    def POS(self):
-        return self.row.POS
-
-    @property
-    def ID(self):
-        return self.row.ID
-
-    @property
-    def REF(self):
-        return self.row.REF
-
-    @property
-    def ALT(self):
-        return self.row.ALT
-
-    @property
-    def QUAL(self):
-        return self.row.QUAL
-
-    @property
-    def FILTER(self):
-        return self.row.FILTER
-
-    @property
-    def INFO(self):
-        return self.row.INFO
-
-    @property
-    def FORMAT(self):
-        return self.row.FORMAT
-
-    def __str__(self):
-        string_list = ["\t".join([str(x) for x in (
-            self.CHROM, self.POS, self.ID, self.REF, self.ALT,
-            self.QUAL, self.FILTER, self.INFO, self.FORMAT)])]
-        string_list.append(self.alts)
-        for samp in self.samples:
-            string_list.append(samp)
-        return "\n".join([str(x) for x in string_list])
-
-    def _fmt_samples(self):
-        sample_list = self.row.samples
-        samples = []
-        for samp in sample_list:
-            phased = samp.data.GT.split("|")
-            unphased = samp.data.GT.split("/")
-            # FIXME this only works for diploid calls
-            if len(phased) == 2:
-                genotypes = phased
-                phases = [True]
-            elif len(unphased) == 2:
-                genotypes = unphased
-                phases = [False]
-            else:
-                warnings.warn("Can't handle polyploid genotypes yet",
-                              FutureWarning)
-
-            #for k, v in samp.data._asdict().iteritems():
-                #print k, v
-            extra = dict((k, v) for k, v in samp.data._asdict().iteritems()
-                         if k != "GT")
-            #for k in samp.data._fields:
-                #print k, getattr(samp.data, k)
-            samples.append(VCFGenotype(
-                self, genotypes, phases, samp.sample, **extra))
-        return samples
-
-    def _fmt_alts(self):
-        alts = []
-        accession = "?"  # FIXME
-        # VCF position is 1 based
-        start = self.POS - 1
-        for alt in self.ALT:
-            end = start + len(alt)
-            location = FeatureLocation(start, end)
-            alts.append(Variant(accession, location, self.REF, alt))
-        # TODO pass VCF type to Variant? implement type guesser in Variant?
-        return alts
-
-
-class VCFGenotype(object):
-    def __init__(self, parent, genotypes, phases, sample, **extra):
-        # Reference to the parent VCFRow
-        self.parent = parent
-        # A pair of genotypes will have one phase, etc.
-        assert len(genotypes) == len(phases) + 1
-        self.genotypes = genotypes
-        self.phases = phases
-        # representing VCF requires work from the VCF parser/adapter
-        # to keep track of what number means what
-        self.sample = sample
-        self.extra = extra
-
-    def __str__(self):
-        string = "Genotype(sample={sample}, Data('GT': {GT}))".format(
-            sample=self.sample,
-            GT=self.GT_string,
-        )
-        extras = []
-        for k, v in self.extra.iteritems():
-            extras.append("\n{0}: {1}".format(k, v))
-        if extras:
-            string = "".join([string] + extras)
-        return string
-
-    @property
-    def GT_string(self, phase_sep="|", unphase_sep="/"):
-        gt_list = [self.genotypes[0]]
-        for gt, phase in zip(self.genotypes[1:], self.phases):
-            if phase:
-                gt_list.append(phase_sep)
-            else:
-                gt_list.append(unphase_sep)
-            gt_list.append(gt)
-
-        return "".join(gt_list)
-
-    @property
-    def GT_bases(self, phase_sep="|", unphase_sep="/"):
-        def gt2base(index):
-            if index == 0:
-                # XXX will the pre always be the same?
-                return str(self.parent.alts[0].pre)
-            else:
-                return str(self.parent.alts[int(index)].post)
-        gt_list = [gt2base(self.genotypes[0])]
-        for gt, phase in zip(self.genotypes[1:], self.phases):
-            if phase:
-                gt_list.append(phase_sep)
-            else:
-                gt_list.append(unphase_sep)
-            gt_list.append(gt2base(gt))
-
-        return "".join(gt_list)
-
-
 class VCFAdapter(object):
     def __init__(self, filename):
         self.parser = Reader(filename=filename)
@@ -172,23 +17,33 @@ class VCFAdapter(object):
         pass
 
     def next(self):
-        #row = self.parser.next()
+        row = self.parser.next()
         #alts = self._fmt_alts(row.POS, row.REF, row.ALT)
-        #vcfrow = VCFRow(row, alts)
-        #samples = self._fmt_samples(vcfrow, row.samples)
-        #vcfrow.samples = samples
-        #print samples[0].GT_string
-        #print samples[0].GT_bases
-        #return vcfrow
-        return VCFRow(self.parser.next())
+        alts = []
+        accession = "?"  # FIXME
+        # VCF position is 1 based
+        start = row.POS - 1
+        for alt in row.ALT:
+            end = start + len(alt)
+            location = FeatureLocation(start, end)
+            alts.append(Variant(accession, location, row.REF, alt, row.var_type))
+        return row, alts
+
+    # FIXME if I make a Variant to PyVCF AltRecord method,
+    # this class won't work because the constructor requires a filename
+    # so should I have separate classes for each direction? 
+    # or is it completely illogical to go back to PyVCF?
 
 
 if __name__ == "__main__":
     p = VCFAdapter("/Users/lenna/Python/PyVCF/vcf/test/walk_left.vcf")
-    # TODO accessors for some of the properties in PyVCF
-    print dir(p.parser)
-    print dir(p.parser.next())
-    row = p.next()
-    print row
-    samp = row.samples[0]
-    print "bases:", samp.GT_bases
+    while True:
+        try:
+            row, alts = p.next()
+        except TypeError:
+            break
+        print row
+        print row.var_type
+        print row.var_subtype
+        print alts
+        #samp = row.samples[0]
