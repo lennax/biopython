@@ -1,3 +1,4 @@
+from Bio.SeqFeature import SeqFeature
 
 
 class Variant(object):
@@ -34,6 +35,11 @@ class Variant(object):
     def __repr__(self):
         return self.__str__()
 
+    def as_SeqFeature(self):
+        return SeqFeature(location=self.location, 
+                          type='', location_operator='', strand=None, 
+                          qualifiers=self.extra)
+
 
 if __name__ == "__main__":
     from Bio.SeqFeature import FeatureLocation
@@ -42,3 +48,4 @@ if __name__ == "__main__":
     print test_var
     test_var_2 = Variant(*test_args, ancestral='G')
     print test_var_2
+    print test_var_2.as_SeqFeature()
