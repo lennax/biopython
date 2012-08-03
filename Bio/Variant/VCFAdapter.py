@@ -11,6 +11,7 @@ class VCFAdapter(object):
         self.parser = Reader(filename=filename)
         # FIXME VCF does not explicity require an accession
         # best way to find the right one in a file?
+        self.accession = "?"
 
         # XXX note: requires Reader._parse_alt to be a static method
         def as_AltRecord(self):
@@ -26,7 +27,7 @@ class VCFAdapter(object):
     def next(self):
         row = self.parser.next()
         alts = []
-        accession = "?"  # FIXME
+        accession = self.accession
         # VCF position is 1 based
         start = row.POS - 1
         for alt in row.ALT:
