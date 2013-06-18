@@ -15,6 +15,7 @@ http://www.uniprot.org
 The UniProt XML format essentially replaces the old plain text file format
 originally introduced by SwissProt ("swiss" format in Bio.SeqIO).
 """
+import json
 import sys
 
 from Bio import Seq
@@ -296,8 +297,15 @@ class Parser(object):
                 append_to_annotations(ann_key, ElementTree.tostring(element))
 
         def _parse_dbReference(element):
-            self.ParsedSeqRecord.dbxrefs.append(element.attrib['type'] + ':' + element.attrib['id'])
-            # e.g.
+            if 'type' in element.attrib and element.attrib['type'] == 'GO':
+                godict = dict(id=element.attrib['id'])
+                for sub_element in element:
+                    if sub_element.tag == NS + 'property':
+                        godict[sub_element.attrib['type']] = sub_element.attrib['value']
+                self.ParsedSeqRecord.dbxrefs.append(json.dumps(godict))
+            else:
+                self.ParsedSeqRecord.dbxrefs.append(element.attrib['type'] + ':' + element.attrib['id'])
+            #e.g.
             # <dbReference type="PDB" key="11" id="2GEZ">
             #   <property value="X-ray" type="method"/>
             #   <property value="2.60 A" type="resolution"/>
