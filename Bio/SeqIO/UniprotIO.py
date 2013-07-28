@@ -297,7 +297,7 @@ class Parser(object):
                 append_to_annotations(ann_key, ElementTree.tostring(element))
 
         def _parse_dbReference(element):
-            if 'type' in element.attrib and element.attrib['type'] == 'GO':
+            if 'type' in element.attrib and element.attrib['type'] in ('GO', 'PDB'):
                 godict = dict(id=element.attrib['id'])
                 for sub_element in element:
                     if sub_element.tag == NS + 'property':
